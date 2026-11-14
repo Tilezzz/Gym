@@ -1,0 +1,1355 @@
+<!doctype html>
+<html lang="fi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0d0f">
+  <meta name="description" content="Ultra Performance — mukautuva hybridi­harjoittelun suunnittelu ja harjoituspäiväkirja.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Ultra Performance">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon-192.png" type="image/png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <style>
+:root{color-scheme:dark;--bg:#0b0d0f;--panel:#171b1e;--panel2:#20262a;--line:#30383b;--muted:#919ea3;--text:#f3f5f5;--green:#259368;--green2:#b0e0c7;--danger:#e3918c;--blue:#92aab8}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}h1,h2,h3,p{margin:0}h1{font-size:31px;line-height:1.06;letter-spacing:-1.3px;font-weight:780}h2{font-size:18px;letter-spacing:-.35px}h3{font-size:15px}small,.muted{color:var(--muted)}a{color:var(--green2)}input,select,textarea{max-width:100%;background:#12171a;border:1px solid #394347;border-radius:9px;color:var(--text);padding:11px;width:100%;outline:0}input:focus,select:focus,textarea:focus{border-color:#56aa83}input[type=checkbox]{width:auto;accent-color:var(--green)}input[type=range]{accent-color:var(--green);padding:3px}input[type=date]{color-scheme:dark}textarea{min-height:70px;resize:vertical}label{font-size:11px;color:#a9b5b8;font-weight:700;display:block;margin-bottom:5px;letter-spacing:.2px}fieldset{border:0;padding:0;margin:0}
+#app{max-width:790px;margin:0 auto;min-height:100vh;padding:0 16px calc(104px + env(safe-area-inset-bottom))}.top{padding:calc(19px + env(safe-area-inset-top)) 0 25px;display:flex;justify-content:space-between;align-items:center;gap:12px}.brand{display:flex;align-items:center;gap:10px}.brand-icon{height:39px;width:39px;background:linear-gradient(145deg,#154a35,#20372e);border:1px solid #2c634a;border-radius:11px;display:grid;place-items:center;color:#b6e7cd;font-size:18px;font-weight:900}.brand strong{font-size:12px;letter-spacing:1.8px;display:block}.brand span{font-size:10px;letter-spacing:1.1px;color:var(--muted)}.top-right{display:flex;align-items:center;gap:9px}.avatar{height:34px;width:34px;border-radius:50%;border:1px solid #46504f;background:#2a3334;display:grid;place-items:center;font-size:11px;font-weight:800}.meta-date{font-size:10px;color:#a5b0b2;letter-spacing:1px;text-align:right}
+.eyebrow{font-size:10px;letter-spacing:2px;color:#8cbda6;font-weight:850;text-transform:uppercase}.lead{font-size:13px;line-height:1.6;color:#9dacb0;max-width:550px;margin-top:10px}.title-row{display:flex;justify-content:space-between;align-items:center;margin:25px 0 12px;gap:10px}.title-row h2{font-size:17px}.stack{display:grid;gap:12px}.card{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:17px;overflow:hidden}.card-head{display:flex;align-items:start;justify-content:space-between;gap:10px;margin-bottom:15px}.card-head p{margin-top:4px;color:var(--muted);font-size:12px}.card.muted-bg{background:#111518}.hero{padding:22px 20px;background:radial-gradient(circle at 100% 0%,#1a382b 0%,transparent 55%),linear-gradient(125deg,#1b2323,#121719);border-color:#3b524a}.hero h1{margin:7px 0}.hero .headline{font-size:28px;letter-spacing:-1px;line-height:1.07;font-weight:780;margin:11px 0}.hero .lead{margin:8px 0 17px}.hero-accent{display:inline-block;color:#9bdab8}.pill{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;border:1px solid #39484a;background:#1d2527;color:#b9c7c8;border-radius:6px;font-size:10px;font-weight:850;letter-spacing:.35px;padding:6px 8px}.pill.green{background:#1b3428;color:#9fe0b8;border-color:#376f52}.pill.blue{background:#253038;color:#b5ccdb;border-color:#455b66}.pill.warn{color:#ebc7a3;border-color:#67533d;background:#2d261e}.pill.red{color:#f1b0a9;border-color:#644641;background:#2d2121}.row{display:flex;gap:10px;align-items:center}.between{justify-content:space-between}.wrap{flex-wrap:wrap}.mt{margin-top:13px}.mb{margin-bottom:13px}.soft{font-size:12px;color:var(--muted);line-height:1.55}.divider{height:1px;background:var(--line);margin:15px 0}.btn{border:1px solid #3d484b;background:#242d30;color:#eef4f3;border-radius:9px;padding:11px 13px;font-weight:770;font-size:12px;min-height:42px;transition:background .15s}.btn:hover{background:#344042}.btn.primary{background:#25865f;border-color:#318b68;color:#fff}.btn.primary:hover{background:#2b9b70}.btn.ghost{background:transparent;color:#b6c6c8}.btn.danger{border-color:#6b4648;color:#f1b6b2;background:#302225}.btn.sm{min-height:34px;padding:7px 10px;font-size:11px}.btn.block{width:100%}.btn-row{display:flex;flex-wrap:wrap;gap:8px}.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.kpi{padding:14px;background:#1a2023;border:1px solid #2d363a;border-radius:10px;min-height:101px}.kpi .value{font-size:27px;font-weight:760;line-height:1.2;letter-spacing:-.7px;font-variant-numeric:tabular-nums}.kpi .tag{font-size:10px;color:#9aabad;margin-bottom:11px}.kpi .unit{font-size:10px;color:#a0acaf;margin-top:5px}.kpi .value.green{color:#8fd0ac}.kpi .value.blue{color:#acc3d1}.split{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.split.three{grid-template-columns:repeat(3,minmax(0,1fr))}.field{margin:11px 0}.choice-row{display:flex;gap:6px;flex-wrap:wrap}.choice{border:1px solid #3b4549;border-radius:8px;padding:9px 11px;min-width:55px;font-size:11px;font-weight:800;background:#161c1f;color:#acb8ba}.choice.on{background:#1d3a2d;border-color:#358261;color:#abefcd}.tile{padding:13px;border:1px solid #313b3d;border-radius:10px;background:#181f22}.tile.active{border-color:#4b956f;background:#203127}.tile strong{display:block;margin:4px 0;font-size:14px}.tile .mini{font-size:10px;color:var(--muted)}.selected{outline:1px solid #3b9a6c}.bar{height:6px;background:#30383c;overflow:hidden;border-radius:6px}.bar i{height:100%;display:block;background:#258c65;border-radius:6px}.bar.blue i{background:#8b9faa}.measure{display:grid;grid-template-columns:90px 1fr 34px;align-items:center;gap:10px;margin:10px 0;font-size:12px}.measure .number{text-align:right;font-variant-numeric:tabular-nums;font-weight:780}.events{display:grid;gap:9px}.event{display:grid;grid-template-columns:47px minmax(0,1fr) auto;gap:11px;align-items:center;padding:12px;background:#14191b;border:1px solid #2d373a;border-radius:10px}.event.complete{border-color:#375e4d}.event .day{border:1px solid #394244;background:#20282a;border-radius:8px;text-align:center;padding:7px 3px}.event .day b{display:block;font-size:15px}.event .day small{display:block;font-size:9px;letter-spacing:1px}.event .name{font-size:13px;font-weight:770}.event .detail{color:var(--muted);font-size:11px;margin-top:3px}.event .controls{display:flex;gap:5px}.event .controls button{min-width:36px}.event .type{font-size:10px;color:#9dceaf;letter-spacing:1px;font-weight:850}.event .type.endurance{color:#aec7d7}.event .type.other{color:#d4c59f}.empty{text-align:center;color:var(--muted);font-size:12px;border:1px dashed #404b4d;border-radius:9px;padding:22px}.nav{position:fixed;bottom:0;left:0;right:0;background:#0e1214f5;border-top:1px solid #344044;box-shadow:0 -9px 30px #0008;backdrop-filter:blur(18px);padding:7px max(10px,env(safe-area-inset-left)) calc(7px + env(safe-area-inset-bottom));z-index:20}.nav-inner{display:grid;grid-template-columns:repeat(5,1fr);max-width:790px;margin:auto;gap:3px}.nav button{border:0;background:transparent;color:#8d999c;padding:9px 2px 7px;display:grid;place-items:center;gap:4px;border-radius:8px;font-size:10px;letter-spacing:.1px;min-width:0}.nav button.active{background:#1b2e26;color:#a5dfbd}.nav .symbol{font-size:20px;line-height:1.1}.session-ex{padding:14px;margin:9px 0;border:1px solid #344143;border-radius:11px;background:#141a1c}.session-ex h3{font-size:15px}.session-ex .hint{color:#96a5a6;font-size:11px;margin:5px 0 13px}.set{display:grid;grid-template-columns:25px 1fr 1fr 1fr 32px;align-items:end;gap:7px;margin:8px 0}.set>span{color:#a3b0b2;padding-bottom:12px;text-align:center;font-size:12px}.set input{padding:8px 5px;text-align:center;font-variant-numeric:tabular-nums;min-width:0;font-size:13px}.set small{display:block;text-align:center;font-size:9px;color:#9aa9ab;margin-bottom:5px}.set .done{background:#254d3a;border-color:#4b996f;color:#baf2ce}.set .checked{background:#3c805b;color:#fff}.time-strip{display:flex;justify-content:space-between;gap:10px;align-items:center;position:sticky;top:0;z-index:5;background:#0f1414ed;border:1px solid #3b5047;border-radius:11px;padding:12px 13px;margin-bottom:12px;backdrop-filter:blur(15px)}.time-strip b{font-variant-numeric:tabular-nums;font-size:19px}.time-strip span{font-size:10px;color:#adbdbe}.select-card{border:1px solid #374245;background:#1a2224;border-radius:11px;padding:13px;margin:9px 0}.select-card.focus{border-color:#4b9b72;background:#1d2e26}.section-label{font-size:10px;color:#9badb0;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;margin:14px 0 7px}.explain{border-left:3px solid #388d63;background:#1c2b25;padding:11px 12px;font-size:12px;color:#cfdfd4;line-height:1.55;border-radius:0 8px 8px 0}.warning{background:#2b2421;color:#e8c1ad;border:1px solid #634b3b;border-radius:9px;padding:12px;font-size:12px}.status{font-size:12px;color:#b7c8c6;line-height:1.6}.history-row{border-bottom:1px solid var(--line);padding:11px 0;display:flex;justify-content:space-between;gap:15px}.history-row .date{font-size:10px;color:#96a5a9}.history-row b{font-size:13px}.history-row p{font-size:11px;color:var(--muted);margin-top:4px}.history-row:last-child{border-bottom:0}.dots{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.dot{height:37px;background:#252b30;border-radius:7px;display:grid;place-items:center;font-size:10px;color:#bac4c7;font-weight:700}.dot.active{background:#295a44;color:#d8f5e6}.checkin{background:#17201d;border:1px solid #416e54;border-radius:12px;padding:15px;margin-bottom:12px}.toast{position:fixed;bottom:calc(100px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:50;max-width:calc(100vw - 32px);padding:11px 17px;border-radius:8px;background:#286348;color:#fff;box-shadow:0 8px 22px #000a;font-size:12px;font-weight:750;text-align:center}.notice{margin:12px 0;padding:12px;border-radius:9px;border:1px solid #3d5a4a;color:#d1e0d9;background:#1b2721;font-size:12px}.badge-line{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0}.section-start{padding:12px 0 6px}.gridline{display:grid;gap:9px}.micro{font-size:10px;line-height:1.5;color:#9ba8ab}.right{text-align:right}.unavailable{color:#d5b59a}.nav button:focus-visible,.btn:focus-visible{outline:2px solid #90cbaa;outline-offset:2px}
+@media(min-width:680px){.nav{left:50%;width:min(790px,100%);transform:translateX(-50%);border-left:1px solid #273438;border-right:1px solid #273438;border-radius:13px 13px 0 0}.hero .headline{font-size:35px}.kpi .value{font-size:30px}}@media(max-width:400px){.card{padding:14px}.kpis{gap:6px}.kpi{padding:11px}.kpi .value{font-size:23px}.set{gap:5px;grid-template-columns:19px 1fr 1fr 1fr 31px}.set input{font-size:12px}.btn{padding:9px 11px}.tile{padding:10px}}@media(prefers-reduced-motion:reduce){*,*:before,*:after{transition:none!important;animation:none!important}}
+/* Interaction overlays and accessibility */
+.modal-backdrop{position:fixed;inset:0;z-index:100;background:#050708e9;display:flex;justify-content:center;align-items:flex-end;padding:12px 12px calc(12px + env(safe-area-inset-bottom));overflow:auto}.modal{width:min(100%,600px);max-height:94dvh;overflow:auto;box-shadow:0 30px 120px #000c;border-color:#40604f}.modal .card-head{margin-bottom:5px}.modal form{padding-bottom:4px}details.history-row{display:block}details.history-row>summary{cursor:pointer;list-style:none}details.history-row>summary:after{content:' ▾';color:var(--muted)}details.history-row[open]>summary{margin-bottom:6px}details.history-row>summary::-webkit-details-marker{display:none}body:has(.modal-backdrop){overflow:hidden}.set .checked{border-color:#65c38e}.brand-icon span{font-size:22px}.tabular{font-variant-numeric:tabular-nums}button,select,input{touch-action:manipulation}form button[type=submit]{margin-top:10px}#app{padding-bottom:calc(104px + env(safe-area-inset-bottom))}@media(min-width:700px){.modal-backdrop{align-items:center;padding:20px}}
+
+.brand-icon{font-size:14px;letter-spacing:-1px}.brand-icon span{font-size:14px}
+
+/* 6.2 — compact mobile-friendly trends */
+.metrics-five{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.metrics-five .kpi{min-height:108px;padding:12px}
+.metrics-five .kpi .value{font-size:24px}
+.trend-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.trend-card{border:1px solid var(--line);background:#161c20;border-radius:10px;padding:14px;min-width:0}
+.trend-card svg{width:100%;height:100px;display:block}
+.trend-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.trend-meta{color:var(--muted);font-size:11px;line-height:1.5}
+.source-chip{font-size:10px;border:1px solid #41505a;background:#243037;border-radius:5px;color:#b5c7d0;padding:2px 5px}
+@media(max-width:680px){.metrics-five{grid-template-columns:repeat(2,minmax(0,1fr))}.metrics-five .kpi:last-child{grid-column:span 2}.trend-grid{grid-template-columns:1fr}}
+</style>
+  <title>Ultra Performance 6.2 — Adaptive Training</title>
+</head>
+<body>
+ <div id="app" aria-live="polite"></div>
+ <div id="toast" class="toast" aria-live="polite" hidden></div>
+ <script type="module">
+
+const __types = (() => {
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const addDays = (date, days) => { const d = new Date(`${date}T12:00:00`); d.setDate(d.getDate() + days); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const diffDays = (a, b) => Math.round((Date.parse(`${a}T12:00:00Z`) - Date.parse(`${b}T12:00:00Z`)) / 864e5);
+const monday = (date) => { const day = new Date(`${date}T12:00:00`).getDay(); return addDays(date, -((day + 6) % 7)); };
+const localDate = (s) => { const d = new Date(s); if (!Number.isFinite(d.getTime()))
+    return today(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const uid = (prefix = 'u') => `${prefix}-${typeof crypto !== 'undefined' && 'randomUUID' in crypto ? crypto.randomUUID() : Math.random().toString(36).slice(2)}`;
+const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+const num = (x, fallback = 0) => { const n = Number(x); return Number.isFinite(n) ? n : fallback; };
+const fiDate = (day) => new Date(`${day}T12:00:00`).toLocaleDateString('fi-FI', { weekday: 'short', day: 'numeric', month: 'short' });
+
+return { today, addDays, diffDays, monday, localDate, uid, clamp, num, fiDate };
+})();
+
+
+const __catalog = (() => {
+const ex = (id, name, group, pattern, sets, min, max, rest, increment, venue, note, flags = {}) => ({ id, name, group, pattern, sets, min, max, rest, increment, venue, note, ...flags });
+const EXERCISES = [
+    ex('hack', 'Hack-kyykky', 'Etureidet', 'knee', 3, 6, 10, 165, 5, 'gym', 'Vakioi liikesyvyys. Hallittu eksentrinen vaihe.'),
+    ex('legpress', 'Jalkaprässi', 'Etureidet', 'knee', 3, 10, 15, 120, 5, 'gym', 'Pidä lantio tuettuna ja liikerata vakiona.'),
+    ex('squat', 'Takakyykky', 'Etureidet', 'knee', 3, 5, 8, 180, 2.5, 'gym', 'Tekniikan tulee säilyä viimeiseen toistoon.'),
+    ex('rdl', 'Romanialainen maastaveto', 'Takareidet', 'hinge', 3, 6, 10, 150, 2.5, 'gym', 'Lonkkasarana, hallittu venytys ja neutraali selkä.'),
+    ex('hamcurl', 'Reisikoukistus istuen', 'Takareidet', 'knee-flexion', 3, 10, 15, 90, 2.5, 'gym', 'Täysi hallittu liikerata.'),
+    ex('hipthrust', 'Hip thrust', 'Pakarat', 'hinge', 2, 8, 12, 120, 5, 'gym', 'Hallittu ojennus ilman alaselän yliojennusta.'),
+    ex('calves', 'Pohjenousu laitteessa', 'Pohkeet', 'calf', 3, 10, 20, 75, 2.5, 'gym', 'Tauko sekä venytyksessä että yläasennossa.'),
+    ex('bench', 'Penkkipunnerrus', 'Rinta', 'horizontal-push', 3, 6, 10, 150, 2.5, 'gym', 'Pidä liikerata ja RIR vertailukelpoisina.'),
+    ex('incline', 'Vinopenkki käsipainoilla', 'Rinta', 'horizontal-push', 2, 8, 12, 105, 2, 'gym', '15–30 asteen kulma, paino per käsipaino.'),
+    ex('chestpress', 'Rintaprässi laitteessa', 'Rinta', 'horizontal-push', 3, 8, 12, 90, 2.5, 'gym', 'Älä lyhennä liikerataa kuorman kasvaessa.'),
+    ex('row', 'Rintatuettu soutu', 'Selkä', 'horizontal-pull', 3, 8, 12, 120, 2.5, 'gym', 'Rinta tuessa, lapaluut liikkuvat.'),
+    ex('latpull', 'Ylätalja', 'Selkä', 'vertical-pull', 3, 8, 12, 105, 2.5, 'gym', 'Kyynärpäät alas; ei heilurivetoa.'),
+    ex('cable-row', 'Alataljasoutu', 'Selkä', 'horizontal-pull', 2, 10, 15, 90, 2.5, 'gym', 'Vakioi ylävartalon asento.'),
+    ex('shoulderpress', 'Pystypunnerrus käsipainoilla', 'Olkapäät', 'vertical-push', 2, 6, 10, 120, 2, 'gym', 'Hallittu liike, paino per käsi.'),
+    ex('lateral', 'Vipunostot sivulle', 'Olkapäät', 'shoulder-isolation', 3, 12, 20, 75, 1, 'gym', 'Älä käytä vartaloa heilurina.'),
+    ex('rear', 'Takaolkapäät taljassa', 'Olkapäät', 'rear-delt', 2, 12, 20, 75, 1, 'gym', 'Rauhallinen liike olkanivelestä.'),
+    ex('biceps', 'Hauiskääntö taljassa', 'Hauis', 'elbow-flexion', 2, 10, 15, 75, 1.25, 'gym', 'Kyynärpäät paikoillaan.'),
+    ex('triceps', 'Ojentajapunnerrus taljassa', 'Ojentaja', 'elbow-extension', 2, 10, 15, 75, 1.25, 'gym', 'Täysi ojennus ja hallittu paluu.'),
+    ex('abs', 'Vatsarutistus taljassa', 'Keskivartalo', 'core', 2, 10, 15, 75, 2.5, 'gym', 'Rintakehä kohti lantiota.'),
+    ex('kb-goblet', 'Goblet-kyykky', 'Etureidet', 'knee', 3, 10, 20, 105, 0, 'home', 'Jos 20 kg liian kevyt, käytä split squat -vaihtoehtoa.'),
+    ex('kb-split', 'Split squat', 'Etureidet', 'knee', 2, 8, 15, 110, 0, 'home', 'Toistot molemmille jaloille.', { perSide: true }),
+    ex('kb-rdl', 'B-stance RDL', 'Takareidet', 'hinge', 2, 8, 15, 100, 0, 'home', 'Etujalan takareisi tekee työn.', { perSide: true }),
+    ex('kb-row', 'Yhden käden kulmasoutu', 'Selkä', 'horizontal-pull', 3, 10, 18, 90, 0, 'home', 'Paino yhdelle puolelle.', { perSide: true }),
+    ex('kb-floor', 'Yhden käden lattiapunnerrus', 'Rinta', 'horizontal-push', 3, 8, 15, 100, 0, 'home', 'Hartia hallinnassa, molemmat puolet.', { perSide: true }),
+    ex('pushup', 'Etunojapunnerrus', 'Rinta', 'horizontal-push', 2, 8, 20, 75, 0, 'home', 'Muuta vaikeutta liikelaajuudella.', { bodyweight: true }),
+    ex('kb-press', 'Yhden käden pystypunnerrus', 'Olkapäät', 'vertical-push', 2, 5, 10, 105, 0, 'home', 'Vain jos kuulan paino sallii puhtaan tekniikan.', { perSide: true }),
+    ex('kb-calves', 'Yhden jalan pohjenousu', 'Pohkeet', 'calf', 2, 12, 20, 70, 0, 'home', 'Hallittu venytys.', { perSide: true, bodyweight: true }),
+    ex('kb-core', 'Sivulankun lantionnosto', 'Keskivartalo', 'core', 2, 8, 15, 55, 0, 'home', 'Toistot per puoli.', { perSide: true, bodyweight: true }),
+    ex('kb-swing', 'Kahvakuulaheilautus', 'Pakarat', 'ballistic', 2, 12, 20, 90, 0, 'home', 'Tekninen räjähtävä sarja. Älä tee failureen.', { ballistic: true }),
+];
+const byId = (id) => EXERCISES.find(e => e.id === id);
+const TEMPLATES = {
+    'gym-full-a': { title: 'Full Body A', sport: 'strength', venue: 'gym', ids: ['hack', 'bench', 'row', 'hamcurl', 'lateral', 'calves', 'triceps'], focus: 'Koko keho · kyykky & työntö' },
+    'gym-full-b': { title: 'Full Body B', sport: 'strength', venue: 'gym', ids: ['rdl', 'latpull', 'incline', 'legpress', 'rear', 'biceps', 'abs'], focus: 'Koko keho · lonkka & veto' },
+    'gym-upper': { title: 'Upper Body', sport: 'strength', venue: 'gym', ids: ['bench', 'row', 'incline', 'latpull', 'lateral', 'biceps', 'triceps'], focus: 'Ylävartalo · hypertrofia' },
+    'gym-lower': { title: 'Lower Body', sport: 'strength', venue: 'gym', ids: ['hack', 'rdl', 'legpress', 'hamcurl', 'calves', 'abs'], focus: 'Alavartalo · hypertrofia' },
+    'gym-push': { title: 'Push', sport: 'strength', venue: 'gym', ids: ['bench', 'incline', 'shoulderpress', 'lateral', 'triceps'], focus: 'Työntävät · hypertrofia' },
+    'gym-pull': { title: 'Pull', sport: 'strength', venue: 'gym', ids: ['row', 'latpull', 'cable-row', 'rear', 'biceps'], focus: 'Vetävät · hypertrofia' },
+    'home-full': { title: 'Kettlebell Full Body', sport: 'strength', venue: 'home', ids: ['kb-split', 'kb-row', 'kb-floor', 'kb-rdl', 'pushup', 'kb-core'], focus: 'Koko kroppa · 1 kuula' },
+    'home-upper': { title: 'Kettlebell Upper', sport: 'strength', venue: 'home', ids: ['kb-floor', 'kb-row', 'pushup', 'kb-press', 'kb-core'], focus: 'Ylävartalo · 1 kuula' },
+    'home-lower': { title: 'Kettlebell Lower', sport: 'strength', venue: 'home', ids: ['kb-split', 'kb-rdl', 'kb-goblet', 'kb-calves', 'kb-core'], focus: 'Alavartalo · 1 kuula' },
+    'run-easy': { title: 'Easy Base Run', sport: 'run', focus: 'Aerobinen perusta' },
+    'run-quality': { title: 'Threshold Intervals', sport: 'run', focus: 'Kynnyskestävyys' },
+    'run-long': { title: 'Long Run', sport: 'run', focus: 'Pitkäkestoinen juoksukestävyys' },
+    'cycle-easy': { title: 'Easy Aerobic Ride', sport: 'cycle', focus: 'Aerobinen tuki' },
+    'cycle-quality': { title: 'Tempo Ride', sport: 'cycle', focus: 'Pyöräilyn vauhtikestävyys' },
+    'cycle-long': { title: 'Endurance Ride', sport: 'cycle', focus: 'Pitkäkestoinen aerobinen ajo' }
+};
+const ACTIVITIES = { strength: 'Voima', run: 'Juoksu', cycle: 'Pyöräily', padel: 'Padel', hike: 'Vaellus', ski: 'Hiihto', walk: 'Kävely', other: 'Muu liikunta' };
+function enduranceSegments(kind, duration) {
+    const run = kind.startsWith('run');
+    const long = kind.endsWith('long');
+    const quality = kind.endsWith('quality');
+    if (long) {
+        const start = Math.min(10, Math.round(duration * .12)), finish = 5;
+        return [{ title: 'Alku · rauhallinen', minutes: start, effort: 'Erittäin kevyt' }, { title: 'Aerobinen pääosa', minutes: Math.max(1, duration - start - finish), effort: 'Kevyt · PK' }, { title: 'Loppu', minutes: finish, effort: 'Kevyt' }];
+    }
+    if (!quality) {
+        const warm = Math.min(8, Math.round(duration * .20)), cool = 5;
+        return [{ title: 'Lämmittely', minutes: warm, effort: 'Kevyt' }, { title: 'Aerobinen pääosa', minutes: Math.max(1, duration - warm - cool), effort: 'Kevyt · keskusteluvauhti' }, { title: 'Jäähdyttely', minutes: cool, effort: 'Kevyt' }];
+    }
+    const warm = Math.max(8, Math.min(15, Math.round(duration * .28))), cool = Math.max(5, Math.min(10, Math.round(duration * .16))), recovery = run ? 4 : 8, main = Math.max(3, duration - warm - cool - recovery);
+    const a = Math.floor(main / 3), b = main - 2 * a;
+    return [{ title: 'Lämmittely', minutes: warm, effort: 'Kevyt' }, { title: 'Veto 1', minutes: a, effort: run ? 'Kynnys · hallitun kova' : 'Tempo · hallitun kova' }, { title: 'Palautus 1', minutes: recovery / 2, effort: 'Erittäin kevyt' }, { title: 'Veto 2', minutes: a, effort: run ? 'Kynnys' : 'Tempo' }, { title: 'Palautus 2', minutes: recovery / 2, effort: 'Erittäin kevyt' }, { title: 'Veto 3', minutes: b, effort: run ? 'Kynnys' : 'Tempo' }, { title: 'Jäähdyttely', minutes: cool, effort: 'Kevyt' }];
+}
+
+return { EXERCISES, byId, TEMPLATES, ACTIVITIES, enduranceSegments };
+})();
+
+
+const __engine = (() => {
+const { TEMPLATES, byId, enduranceSegments } = __catalog;
+const { addDays, clamp, diffDays, monday, num, today, uid } = __types;
+const defaultProfile = { goalWeight: 78, kettlebellKg: 20, capacity: 'balanced', split: 'full', autopilot: true, runTarget: 3, strengthTarget: 2, cyclingEnabled: true, maxMinutes: 60 };
+function initial() { return { version: 6, profile: { ...defaultProfile }, activities: [], plan: [], recovery: [], changes: [], proposals: [], active: null, selectedDate: today(), legacyImported: false, onboarded: false }; }
+const sportOf = (kind) => TEMPLATES[kind]?.sport || 'other';
+const candidateKinds = (sport = 'all') => Object.keys(TEMPLATES).filter(k => sport === 'all' || TEMPLATES[k].sport === sport);
+function item(date, kind, duration, priority) { const t = TEMPLATES[kind]; return { id: uid('plan'), date, sport: t.sport, kind, title: t.title, duration, priority, status: 'planned', locked: false }; }
+function makeWeek(state, weekDate, force = false) {
+    const m = monday(weekDate), end = addDays(m, 6), old = state.plan.filter(p => p.date >= m && p.date <= end);
+    if (old.length && !force)
+        return old;
+    const split = state.profile.split, mode = state.profile.capacity;
+    const fullA = split === 'ul' ? 'gym-upper' : split === 'ppl' ? 'gym-push' : 'gym-full-a';
+    const fullB = split === 'ul' ? 'gym-lower' : split === 'ppl' ? 'gym-pull' : 'gym-full-b';
+    const plan = [item(addDays(m, 0), fullA, mode === 'minimum' ? 40 : 55, 'key'), item(addDays(m, 1), 'run-easy', mode === 'minimum' ? 30 : 40, 'support'), item(addDays(m, 3), fullB, mode === 'minimum' ? 40 : 55, 'key'), item(addDays(m, 6), 'run-long', mode === 'minimum' ? 60 : 75, 'key')];
+    if (mode !== 'minimum')
+        plan.push(item(addDays(m, 4), 'run-quality', 45, 'support'));
+    if (mode === 'performance')
+        plan.push(item(addDays(m, 2), split === 'full' ? 'gym-full-a' : split === 'ul' ? 'gym-upper' : 'gym-lower', 55, 'support'));
+    if (mode === 'performance' && state.profile.cyclingEnabled)
+        plan.push(item(addDays(m, 5), 'cycle-easy', 45, 'optional'));
+    if (force) {
+        const completed = old.filter(p => p.status === 'done');
+        state.plan = state.plan.filter(p => p.date < m || p.date > end);
+        plan.push(...completed);
+    }
+    state.plan.push(...plan);
+    state.plan.sort((a, b) => a.date.localeCompare(b.date));
+    return plan;
+}
+function getRecovery(state, date = today()) { return [...state.recovery].filter(r => r.date <= date && diffDays(date, r.date) <= 1).sort((a, b) => b.date.localeCompare(a.date))[0]; }
+function recentLegLoad(state, date = today()) {
+    const rec = getRecovery(state, date);
+    if (rec && rec.legs >= 3)
+        return { high: true, reason: 'Smart Check-in: voimakas jalkojen kuormitus' };
+    const high = state.activities.filter(a => { const delta = diffDays(date, a.date); return delta >= 0 && delta <= 2 && a.legStress >= 3 && a.sessionRpe >= 7; });
+    if (high.length)
+        return { high: true, reason: `Viime aikojen ${high[0].title.toLowerCase()} kuormitti alavartaloa` };
+    return { high: false, reason: 'Ei vahvaa viitettä poikkeavasta jalkakuormasta' };
+}
+function recoveryAdvice(state, date = today()) {
+    const reasons = [];
+    const rec = getRecovery(state, date);
+    if (rec?.pain)
+        reasons.push('kirjattuja kipu- tai sairausoireita');
+    if (rec?.energy !== undefined && rec.energy > 0 && rec.energy <= 2)
+        reasons.push('oma vire on heikko');
+    if (rec?.legs !== undefined && rec.legs >= 3)
+        reasons.push('jalkojen lihasarkuus on voimakas');
+    const legs = recentLegLoad(state, date);
+    if (legs.high && !reasons.some(x => x.includes('jalk')))
+        reasons.push(legs.reason);
+    const severe = !!rec?.pain || reasons.length >= 2 || (rec?.energy === 1);
+    return { reduce: severe, reasons };
+}
+function lastSets(state, id) { return [...state.activities].sort((a, b) => b.startedAt.localeCompare(a.startedAt)).map(a => a.sets.filter(s => s.exerciseId === id && s.done)).find(s => s.length > 0) || []; }
+function progression(state, e) {
+    if (e.venue === 'home')
+        return { weight: e.bodyweight ? 0 : state.profile.kettlebellKg, reason: 'Kotona: etene toistoissa tai liikevariantissa, älä kuvitellulla painonkorotuksella.', increase: false };
+    const prev = lastSets(state, e.id);
+    if (!prev.length)
+        return { weight: null, reason: 'Valitse ensimmäinen työpaino tavoite-RIR:n mukaan.', increase: false };
+    const kg = prev[0].weight;
+    const comparable = prev.every(s => Math.abs(s.weight - kg) < .01);
+    if (comparable && prev.length >= 2 && prev.every(s => s.reps >= e.max && s.rir >= 1))
+        return { weight: Number((kg + e.increment).toFixed(2)), reason: `Edelliset sarjat toistoalueen yläpäässä. Ehdotus +${e.increment} kg.`, increase: true };
+    if (prev.some(s => s.reps < e.min && s.rir === 0))
+        return { weight: kg, reason: 'Edellisessä treenissä alaraja alittui failurella. Pidä tai kevennä kuormaa.', increase: false };
+    return { weight: kg, reason: `Edellinen toteuma ${prev.map(s => s.reps).join(' / ')}. Pyri lisäämään toistoja.`, increase: false };
+}
+function estimate(es, minutes, venue) {
+    const warm = Math.min(10, minutes <= 30 ? 5 : 8);
+    return Math.ceil(warm + es.reduce((sum, e) => sum + e.sets * (e.perSide ? 1.7 : 0.85) + Math.max(0, e.sets - 1) * e.rest / 60 + 1.25, 0));
+}
+function generate(state, kind, minutes, plan) {
+    const template = TEMPLATES[kind];
+    if (!template)
+        throw Error('Tuntematon harjoitus');
+    minutes = clamp(Math.round(minutes), 20, 180);
+    const advice = recoveryAdvice(state), leg = recentLegLoad(state);
+    if (template.sport !== 'strength') {
+        const quality = kind.endsWith('quality') && !plan?.locked && (advice.reduce || leg.high);
+        const effective = quality ? (template.sport === 'run' ? 'run-easy' : 'cycle-easy') : kind;
+        const segments = enduranceSegments(effective, minutes);
+        const note = quality ? `Tehoharjoitus muutettiin kevyeksi: ${[...advice.reasons, leg.reason].join('; ')}.` : `Tavoite: ${TEMPLATES[effective].focus}. Rasitus valitaan henkilökohtaisen tason mukaan.`;
+        return { title: TEMPLATES[effective].title, kind: effective, sport: template.sport, timeBudget: minutes, estimatedMinutes: segments.reduce((a, b) => a + b.minutes, 0), warmupMinutes: 0, exercises: [], segments, reason: note, rirTarget: 0, reduced: quality };
+    }
+    const venue = template.venue || 'gym';
+    const selected = (template.ids || []).map(byId).filter((x) => !!x);
+    const reduce = (!plan?.locked && advice.reduce) || plan?.adjustment === 'reducedLeg';
+    const out = [];
+    for (const raw of selected) {
+        let sets = raw.sets;
+        if (minutes <= 30)
+            sets = Math.min(2, sets);
+        else if (minutes <= 45 && out.length > 1)
+            sets = Math.min(2, sets);
+        if (reduce && (raw.group === 'Etureidet' || raw.group === 'Takareidet' || raw.group === 'Pakarat' || raw.group === 'Pohkeet'))
+            sets = Math.max(1, sets - 1);
+        if (raw.ballistic && leg.high)
+            continue;
+        const e = { ...raw, sets };
+        if (out.length >= 2 && estimate([...out, e], minutes, venue) > minutes)
+            break;
+        if (out.length >= 2 && out.length >= (minutes <= 30 ? 4 : minutes <= 45 ? 5 : 7))
+            break;
+        out.push(e);
+    }
+    while (out.length > 2 && estimate(out, minutes, venue) > minutes)
+        out.pop();
+    const estimatedMinutes = estimate(out, minutes, venue);
+    return { title: template.title, kind, sport: 'strength', venue, timeBudget: minutes, estimatedMinutes, warmupMinutes: minutes <= 30 ? 5 : 8, exercises: out, segments: [], reason: reduce ? `Alavartolon volyymia kevennettiin: ${advice.reasons.join('; ') || leg.reason}. Pääliikkeiden tekniikka ja palautukset säilyvät.` : `Liikkeet valittiin ${template.focus.toLowerCase()} -tavoitteeseen. Ei supersettejä.`, rirTarget: reduce ? 3 : 2, reduced: reduce };
+}
+function startSession(state, kind, minutes, planId) {
+    if (state.active)
+        throw Error('Harjoitus on jo käynnissä');
+    const plan = state.plan.find(p => p.id === planId), session = generate(state, kind, minutes, plan);
+    const sets = session.exercises.flatMap(e => Array.from({ length: e.sets }, (_, ix) => ({ id: uid('set'), exerciseId: e.id, name: e.name, group: e.group, set: ix + 1, weight: progression(state, e).weight ?? 0, reps: e.min, rir: session.rirTarget, done: false })));
+    const draft = { id: uid('draft'), planId, date: today(), startedAt: new Date().toISOString(), session, sets };
+    state.active = draft;
+    return draft;
+}
+function finishSession(state, details) {
+    const draft = state.active;
+    if (!draft)
+        throw Error('Ei aktiivista harjoitusta');
+    const done = draft.sets.filter(s => s.done && s.reps >= 1);
+    if (draft.session.sport === 'strength' && done.length === 0)
+        throw Error('Merkitse vähintään yksi työsarja valmiiksi');
+    const a = { id: uid('act'), date: today(), startedAt: draft.startedAt, source: 'manual', sport: draft.session.sport, kind: draft.session.kind, title: draft.session.title, duration: draft.session.sport === 'strength' ? Math.max(1, Math.round((Date.now() - Date.parse(draft.startedAt)) / 60000)) : draft.session.estimatedMinutes, distanceKm: num(details.distance), ascentM: num(details.ascent), avgHr: num(details.avgHr), sessionRpe: details.rpe, legStress: details.legs, notes: details.notes || '', sets: done, planId: draft.planId };
+    if (a.sport === 'strength' && a.duration < 5)
+        a.duration = draft.session.estimatedMinutes;
+    state.activities.unshift(a);
+    const p = state.plan.find(x => x.id === draft.planId);
+    if (p)
+        p.status = 'done';
+    state.active = null;
+    adaptAfter(state, a);
+    return a;
+}
+function addActivity(state, input) {
+    if (input.duration <= 0 || input.duration > 2000)
+        throw Error('Tarkista kesto');
+    const existing = state.activities.find(a => (input.externalId && a.externalId === input.externalId && a.source === input.source) || (a.date === input.date && a.sport === input.sport && Math.abs(a.duration - input.duration) < 2 && Math.abs(Date.parse(a.startedAt) - Date.parse(input.startedAt)) < 10 * 60e3));
+    if (existing)
+        return existing;
+    const a = { ...input, id: uid('act') };
+    state.activities.unshift(a);
+    adaptAfter(state, a);
+    return a;
+}
+function recordRecovery(state, entry) { state.recovery = state.recovery.filter(r => r.date !== entry.date); state.recovery.push(entry); state.recovery.sort((a, b) => b.date.localeCompare(a.date)); }
+function change(state, message, reason, type) { state.changes.unshift({ id: uid('log'), date: new Date().toISOString(), message, reason, type }); state.changes = state.changes.slice(0, 200); }
+function adaptAfter(state, activity) {
+    if (!state.profile.autopilot)
+        return;
+    const high = activity.sessionRpe >= 7 && activity.legStress >= 3;
+    if (!high)
+        return;
+    const upcoming = state.plan.filter(p => p.status === 'planned' && !p.locked && p.date >= today() && diffDays(p.date, activity.date) >= 0 && diffDays(p.date, activity.date) <= 2).sort((a, b) => a.date.localeCompare(b.date));
+    for (const p of upcoming) {
+        if (p.sport === 'strength' && (p.kind.includes('lower') || p.kind.includes('full') || p.kind.includes('legs'))) {
+            p.adjustment = 'reducedLeg';
+            p.reason = `${activity.title} · RPE ${activity.sessionRpe}/10, jalkakuormitus ${activity.legStress}/3`;
+            change(state, `${p.title}: alavartolon sarjamäärää vähennettiin`, `Äskettäinen ${activity.title.toLowerCase()} kuormitti jalkoja.`, 'automatic');
+            break;
+        }
+        if (p.sport === 'run' && p.kind === 'run-quality') {
+            p.kind = 'run-easy';
+            p.title = TEMPLATES['run-easy'].title;
+            p.adjustment = 'easy';
+            p.reason = `${activity.title} · voimakas alavartolon kuormitus`;
+            change(state, 'Kova juoksu muutettiin kevyeksi', `Kuormittava ${activity.title.toLowerCase()} lähellä suunniteltua laatuharjoitusta.`, 'automatic');
+            break;
+        }
+    }
+}
+function swapPlan(state, id, newKind, approved) {
+    const p = state.plan.find(x => x.id === id), t = TEMPLATES[newKind];
+    if (!p || !t)
+        return false;
+    if (p.sport !== t.sport && !approved)
+        return false;
+    const old = p.title;
+    p.kind = newKind;
+    p.sport = t.sport;
+    p.title = t.title;
+    p.adjustment = undefined;
+    p.reason = 'Käyttäjän hyväksymä muutos';
+    change(state, `${old} → ${p.title}`, 'Käyttäjän hyväksymä harjoitusmuutos', 'approved');
+    return true;
+}
+function weekStats(state, end = today()) {
+    const start = addDays(end, -6), acts = state.activities.filter(a => a.date >= start && a.date <= end);
+    const strength = acts.filter(a => a.sport === 'strength'), runs = acts.filter(a => a.sport === 'run'), cycles = acts.filter(a => a.sport === 'cycle');
+    const groups = {};
+    for (const a of strength)
+        for (const s of a.sets)
+            if (s.done)
+                groups[s.group] = (groups[s.group] || 0) + 1;
+    return { activities: acts.length, strength: strength.length, runs: runs.length, cycles: cycles.length, runKm: runs.reduce((s, a) => s + a.distanceKm, 0), runMinutes: runs.reduce((s, a) => s + a.duration, 0), cycleMinutes: cycles.reduce((s, a) => s + a.duration, 0), otherMinutes: acts.filter(a => !['strength', 'run', 'cycle'].includes(a.sport)).reduce((s, a) => s + a.duration, 0), sets: Object.values(groups).reduce((s, n) => s + n, 0), groups };
+}
+function coachRecommendation(state, date = today()) {
+    const plans = state.plan.filter(p => p.status === 'planned' && p.date >= date).sort((a, b) => a.date.localeCompare(b.date));
+    const current = plans.find(p => p.date === date) || plans[0];
+    const advice = recoveryAdvice(state, date);
+    const todayRecovery = getRecovery(state, date);
+    const warning = todayRecovery?.pain ? 'Kipu- tai sairausoireita on kirjattu: suunniteltu harjoitus ei sovellu automaattiseksi suositukseksi. Arvioi oireet ennen kuormitusta.' : advice.reduce ? 'Päivän voimakas väsymys tai alavartolon kuormitus puoltaa kevennystä.' : '';
+    if (current)
+        return { plan: current, reason: current.date === date ? `Suunniteltu ${current.priority === 'key' ? 'avainharjoitus' : 'tukiharjoitus'}. ${current.reason || 'Valmentaja huomioi toteutuneet harjoitukset.'}` : `Seuraava harjoitus ${current.date}. Ei väliin jääneiden harjoitusten takaisinmaksua.`, warning };
+    return { reason: 'Tälle jaksolle ei ole suunnitelmaa. Luo seuraavan viikon ohjelma.', warning };
+}
+function exerciseHistory(state, exId) { return state.activities.filter(a => a.sport === 'strength').flatMap(a => { const s = a.sets.filter(x => x.done && x.exerciseId === exId); return s.length ? [{ date: a.date, kg: Math.max(...s.map(x => x.weight)), reps: Math.max(...s.map(x => x.reps)), rir: s[0].rir }] : []; }).sort((a, b) => a.date.localeCompare(b.date)); }
+function formatDuration(mins) { return mins >= 60 ? `${Math.floor(mins / 60)} h ${mins % 60 ? mins % 60 + ' min' : ''}`.trim() : `${mins} min`; }
+
+return { defaultProfile, initial, sportOf, candidateKinds, makeWeek, getRecovery, recentLegLoad, recoveryAdvice, lastSets, progression, generate, startSession, finishSession, addActivity, recordRecovery, adaptAfter, swapPlan, weekStats, coachRecommendation, exerciseHistory, formatDuration };
+})();
+
+
+const __store = (() => {
+const { initial, makeWeek } = __engine;
+const { localDate, num, today, uid } = __types;
+const KEY = 'ultra-performance-v6-fresh-20261106';
+function load() {
+    let state = initial();
+    try {
+        const raw = localStorage.getItem(KEY);
+        if (raw) {
+            const x = JSON.parse(raw);
+            if (x?.version === 6 && Array.isArray(x.activities) && Array.isArray(x.plan) && Array.isArray(x.recovery)) {
+                state = { ...state, ...x, profile: { ...state.profile, ...x.profile } };
+                return state;
+            }
+        }
+    }
+    catch (e) {
+        console.warn('Paikallinen tila ei auennut', e);
+    }
+    makeWeek(state, today());
+    save(state);
+    return state;
+}
+function save(state) { try {
+    localStorage.setItem(KEY, JSON.stringify(state));
+    return true;
+}
+catch (e) {
+    console.error('Tallennus epäonnistui', e);
+    return false;
+} }
+function migrateLegacy(state, old) {
+    if (!old || !Array.isArray(old.history))
+        throw Error('Vanha tiedosto ei sisällä historiaa');
+    let imported = 0;
+    const known = new Set(state.activities.map(a => a.externalId).filter(Boolean));
+    for (const h of old.history.slice(0, 20000)) {
+        const sourceId = 'legacy-' + String(h.id || h.date + '-' + h.kind);
+        if (known.has(sourceId))
+            continue;
+        const rawSets = Array.isArray(h.sets) ? h.sets : [];
+        const sets = rawSets.map((s, i) => ({ id: uid('set'), exerciseId: mapLegacyId(String(s.exerciseId || s.name || `old-${i}`)), name: String(s.name || 'Vanha liike').slice(0, 100), group: normalizeGroup(s.group), set: i + 1, weight: num(s.weight), reps: num(s.reps), rir: num(s.rir, 2), done: true }));
+        const a = { id: uid('legacy'), source: 'legacy', externalId: sourceId, date: localDate(h.date || new Date().toISOString()), startedAt: String(h.date || new Date().toISOString()), sport: 'strength', kind: String(h.kind || 'gym-full-a'), title: 'Ultra Gym · ' + String(h.kind || 'Voima'), duration: num(h.duration, 45) || 45, distanceKm: 0, ascentM: 0, avgHr: 0, sessionRpe: 5, legStress: 1, notes: 'Tuotu Ultra Gym 5.0 -historiasta. RPE ja jalkokuormitus eivät ole alkuperäisiä mittauksia.', sets };
+        a.sessionRpe = 0;
+        a.legStress = 0;
+        state.activities.push(a);
+        imported++;
+        known.add(sourceId);
+    }
+    if (old.settings) {
+        if (Number.isFinite(Number(old.settings.goalWeight)))
+            state.profile.goalWeight = num(old.settings.goalWeight);
+        if (Number.isFinite(Number(old.settings.kettlebellKg)))
+            state.profile.kettlebellKg = num(old.settings.kettlebellKg);
+    }
+    state.activities.sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+    if (imported)
+        state.changes.unshift({ id: uid('log'), date: new Date().toISOString(), message: `Tuotiin ${imported} vanhaa voimaharjoitusta`, reason: 'Ultra Gym 5.0 → Ultra Performance 6.0. Alkuperäiseen tallennukseen ei koskettu.', type: 'information' });
+    return state;
+}
+const legacyIds = { 'u-bench': 'bench', 'u-row': 'row', 'u-incline': 'incline', 'u-pull': 'latpull', 'u-lateral': 'lateral', 'u-rear': 'rear', 'u-curl': 'biceps', 'u-tricep': 'triceps', 'l-rdl': 'rdl', 'l-press': 'legpress', 'l-curl': 'hamcurl', 'l-calves': 'calves', 'l-abs': 'abs', 'kb-row': 'kb-row', 'kb-goblet': 'kb-goblet', 'kb-kickstand': 'kb-rdl', 'kb-floor': 'kb-floor', 'kb-split': 'kb-split' };
+function mapLegacyId(id) { return legacyIds[id] || id; }
+const groups = ['Rinta', 'Selkä', 'Olkapäät', 'Etureidet', 'Takareidet', 'Pakarat', 'Pohkeet', 'Hauis', 'Ojentaja', 'Keskivartalo'];
+function normalizeGroup(x) { return groups.includes(x) ? x : 'Keskivartalo'; }
+function importBackup(state, raw) {
+    if (raw?.version === 6 && Array.isArray(raw.activities) && Array.isArray(raw.plan) && raw.profile) {
+        if (raw.activities.length > 100000)
+            throw Error('Liian suuri tiedosto');
+        const d = initial();
+        return { state: { ...d, ...raw, profile: { ...d.profile, ...raw.profile }, active: null }, message: 'Ultra Performance 6 -varmuuskopio palautettu' };
+    }
+    if (raw?.history && Array.isArray(raw.history)) {
+        const s = migrateLegacy(state, raw);
+        s.legacyImported = true;
+        return { state: s, message: 'Ultra Gym -historia yhdistetty. Nykyinen data säilyi.' };
+    }
+    throw Error('Tuntematon JSON-muoto');
+}
+function filenameDate() { return today().replaceAll('-', ''); }
+function download(name, contents, type = 'application/json') {
+    const url = URL.createObjectURL(new Blob([contents], { type }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+function csvExport(state) {
+    const rows = [['date', 'sport', 'title', 'duration_min', 'distance_km', 'rpe', 'exercise', 'weight_kg', 'reps', 'rir']];
+    for (const a of state.activities) {
+        if (a.sets.length)
+            for (const s of a.sets)
+                rows.push([a.date, a.sport, a.title, a.duration, a.distanceKm, a.sessionRpe, s.name, s.weight, s.reps, s.rir].map(String));
+        else
+            rows.push([a.date, a.sport, a.title, a.duration, a.distanceKm, a.sessionRpe, '', '', '', ''].map(String));
+    }
+    return '\ufeff' + rows.map(row => row.map(x => '"' + String(x ?? '').replaceAll('"', '""') + '"').join(';')).join('\r\n');
+}
+
+return { load, save, migrateLegacy, importBackup, filenameDate, download, csvExport };
+})();
+
+
+const __external = (() => {
+const { localDate, num } = __types;
+const { addActivity, recordRecovery } = __engine;
+function obj(v) { return v && typeof v === 'object' ? v : {}; }
+const safeArr = (v) => Array.isArray(v) ? v.filter(x => x && typeof x === 'object') : [];
+function importGarminJSON(state, input) {
+    const root = obj(input);
+    const all = Array.isArray(input) ? safeArr(input) : safeArr(root.activities || root.data || root.activityList || root.results);
+    if (!all.length)
+        throw Error('Ei Garmin-aktiviteettitaulukkoa. Tuo Garmin Personal API:n activities-listan JSON.');
+    if (all.length > 15000)
+        throw Error('Liikaa aktiviteetteja');
+    let added = 0, skipped = 0;
+    for (const row of all) {
+        const a = obj(row);
+        if (!a.activityId && !a.startTimeLocal && !a.startTimeGMT && !a.startTime) {
+            skipped++;
+            continue;
+        }
+        const rawType = String(a.activityType?.typeKey || a.activityType?.typeId || a.activityType || a.sport || '').toLowerCase();
+        let sport = 'other';
+        if (/running|trail_running|treadmill/.test(rawType))
+            sport = 'run';
+        else if (/cycling|biking|indoor_cycling/.test(rawType))
+            sport = 'cycle';
+        else if (/padel/.test(rawType))
+            sport = 'padel';
+        else if (/hiking|mountaineering/.test(rawType))
+            sport = 'hike';
+        else if (/ski/.test(rawType))
+            sport = 'ski';
+        else if (/walking/.test(rawType))
+            sport = 'walk';
+        else if (/strength|fitness_equipment/.test(rawType))
+            sport = 'strength';
+        const stamp = String(a.startTimeLocal || a.startTimeGMT || a.startTime || new Date().toISOString());
+        const date = /^\d{4}-\d{2}-\d{2}/.test(stamp) ? stamp.slice(0, 10) : localDate(stamp);
+        const rawDuration = num(a.duration || a.elapsedDuration || a.movingDuration);
+        const duration = Math.round(rawDuration > 1800 ? rawDuration / 60 : rawDuration / 60);
+        if (duration <= 0 || duration > 2000) {
+            skipped++;
+            continue;
+        }
+        const ext = String(a.activityId || '') || undefined;
+        if (ext && state.activities.some(x => x.externalId === `garmin-${ext}` && x.source === 'garmin')) {
+            skipped++;
+            continue;
+        }
+        const before = state.activities.length;
+        addActivity(state, { source: 'garmin', externalId: ext ? `garmin-${ext}` : undefined, date, startedAt: stamp, sport, kind: 'garmin-import', title: String(a.activityName || a.name || rawType || 'Garmin-aktiviteetti').slice(0, 100), duration, distanceKm: num(a.distance) / 1000, ascentM: num(a.elevationGain || a.totalAscent), avgHr: num(a.averageHR || a.averageHeartRate), sessionRpe: 0, legStress: 0, notes: 'Garminin JSON-tuonti. RPE ja jalkakuormitus odottavat Smart Check-iniä.', sets: [] });
+        if (state.activities.length > before)
+            added++;
+        else
+            skipped++;
+    }
+    if (!added)
+        throw Error('Uusia aktiviteetteja ei löytynyt. Tarkista tiedostomuoto tai kaksoiskappaleet.');
+    return { added, skipped };
+}
+function importOuraJSON(state, input) {
+    const root = obj(input), items = safeArr(root.data || root.sleep || root.daily_sleep || root.daily_readiness || input);
+    if (items.length > 10000)
+        throw Error('Liikaa mittauksia');
+    if (!items.length)
+        throw Error('Oura JSON -tietueita ei löytynyt');
+    let added = 0;
+    for (const item of items) {
+        const d = String(item.day || item.date || '');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(d))
+            continue;
+        const old = state.recovery.find(r => r.date === d);
+        const entry = { date: d, energy: old?.energy ?? 0, legs: old?.legs ?? 0 };
+        if (old?.comment)
+            entry.comment = old.comment;
+        if (old?.sleepHours !== undefined)
+            entry.sleepHours = old.sleepHours;
+        if (old?.hrv !== undefined)
+            entry.hrv = old.hrv;
+        if (old?.restHr !== undefined)
+            entry.restHr = old.restHr;
+        if (old?.readiness !== undefined)
+            entry.readiness = old.readiness;
+        if (item.total_sleep_duration !== undefined)
+            entry.sleepHours = Math.round(num(item.total_sleep_duration) / 360) / 10;
+        if (item.average_hrv !== undefined)
+            entry.hrv = num(item.average_hrv);
+        if (item.lowest_heart_rate !== undefined)
+            entry.restHr = num(item.lowest_heart_rate);
+        if (item.score !== undefined && (item.contributors?.hrv_balance !== undefined || item.contributors?.recovery_index !== undefined))
+            entry.readiness = num(item.score);
+        if (item.readiness_score !== undefined)
+            entry.readiness = num(item.readiness_score);
+        if (entry.sleepHours === undefined && entry.hrv === undefined && entry.restHr === undefined && entry.readiness === undefined)
+            continue;
+        recordRecovery(state, entry);
+        added++;
+    }
+    if (!added)
+        throw Error('Sleep/Readiness-kenttiä ei tunnistettu. Tarvitaan Oura API V2 -JSON, jossa day ja mittausarvot.');
+    return { added };
+}
+
+function importOuraWorkoutJSON(state, input) {
+    const root = obj(input);
+    const rows = safeArr(Array.isArray(input) ? input : root.data || root.workouts);
+    if (rows.length > 10000) throw Error('Liikaa Oura-harjoituksia');
+    let added = 0, skipped = 0;
+    const names = {
+        gardening: ['other', 'Pihatyöt'], yard_work: ['other', 'Pihatyöt'],
+        housework: ['other', 'Kotityöt'], walking: ['walk', 'Kävely'],
+        hiking: ['hike', 'Vaellus'], running: ['run', 'Juoksu'],
+        cycling: ['cycle', 'Pyöräily'], indoor_cycling: ['cycle', 'Sisäpyöräily'],
+        strength_training: ['strength', 'Voimaharjoittelu'], weight_training: ['strength', 'Voimaharjoittelu'],
+        padel: ['padel', 'Padel'], cross_country_skiing: ['ski', 'Hiihto'], skiing: ['ski', 'Hiihto']
+    };
+    for (const item of rows) {
+        const startedAt = String(item.start_datetime || '');
+        const endAt = String(item.end_datetime || '');
+        const startMs = Date.parse(startedAt), endMs = Date.parse(endAt);
+        if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs) { skipped++; continue; }
+        const duration = Math.round((endMs - startMs) / 60000);
+        if (duration < 1 || duration > 2000) { skipped++; continue; }
+        const id = item.id === undefined ? '' : String(item.id);
+        const ext = id ? 'oura-' + id : undefined;
+        if (ext && state.activities.some(x => x.source === 'oura' && x.externalId === ext)) { skipped++; continue; }
+        const raw = String(item.activity || '').toLowerCase().trim();
+        const [sport, name] = names[raw] || ['other', (item.label || raw || 'Muu aktiviteetti').replaceAll('_', ' ')];
+        // Garmin is primary for workouts recorded by both devices. Match by strong
+        // time overlap instead of requiring identical workout durations or labels.
+        const sameAsExisting = state.activities.some(x => {
+            if (x.source !== 'garmin' && x.source !== 'manual') return false;
+            const xs = Date.parse(x.startedAt), xe = xs + Number(x.duration || 0) * 60000;
+            if (!Number.isFinite(xs) || !Number.isFinite(xe) || xe <= xs) return false;
+            const overlap = Math.max(0, Math.min(endMs, xe) - Math.max(startMs, xs));
+            const fraction = overlap / Math.min(endMs - startMs, xe - xs);
+            const comparable = x.sport === sport;
+            return fraction >= 0.85 || (comparable && fraction >= 0.65);
+        });
+        if (sameAsExisting) { skipped++; continue; }
+        const date = /^\d{4}-\d{2}-\d{2}$/.test(String(item.day || '')) ? String(item.day) : startedAt.slice(0, 10);
+        const before = state.activities.length;
+        addActivity(state, {
+            source: 'oura', externalId: ext, date, startedAt, sport,
+            kind: 'oura-import', title: String(item.label || name).slice(0, 100),
+            duration, distanceKm: num(item.distance) / 1000, ascentM: 0, avgHr: 0,
+            sessionRpe: 0, legStress: 0,
+            notes: 'Oura Workout (' + String(item.source || 'tuntematon lähde') + '). RPE ja lihaskuormitus odottavat Smart Check-iniä.',
+            sets: []
+        });
+        if (state.activities.length > before) added++; else skipped++;
+    }
+    return { added, skipped };
+}
+return { importGarminJSON, importOuraJSON, importOuraWorkoutJSON };
+})();
+
+
+// main.js
+const { ACTIVITIES, EXERCISES, TEMPLATES } = __catalog;
+const { addActivity, coachRecommendation, exerciseHistory, finishSession, formatDuration, generate, getRecovery, initial, makeWeek, recordRecovery, progression, recoveryAdvice, startSession, swapPlan, weekStats } = __engine;
+const { csvExport, download, filenameDate, importBackup, load, save } = __store;
+const { importGarminJSON, importOuraJSON, importOuraWorkoutJSON } = __external;
+const { addDays, clamp, fiDate, monday, num, today, uid } = __types;
+// Activities are classified by purpose, not by calories or pulse alone.
+// Daily life is important for recovery but is never treated as planned aerobic training.
+function activityCategory(a){
+  if(a.sport==='strength')return 'strength';
+  if(['run','cycle','hike','ski'].includes(a.sport))return 'endurance';
+  if(['padel','swim','sport'].includes(a.sport))return 'sport';
+  return 'daily';
+}
+function categoryName(a){
+  const k=activityCategory(a);
+  return {strength:'Voima',endurance:'Kestävyysharjoittelu',sport:'Muu urheilu',daily:'Arkiliikunta'}[k];
+}
+function displayActivityTitle(a){
+  const raw=String(a.title||'').trim();
+  const names={yardwork:'Pihatyöt',yard_work:'Pihatyöt',gardening:'Pihatyöt',housework:'Kotityöt',walking:'Kävely',strength:'Voimaharjoittelu',hiking:'Vaellus'};
+  return names[raw.toLowerCase()]||raw;
+}
+function sourceName(a){return {oura:'Oura',garmin:'Garmin',manual:'Oma kirjaus',legacy:'Vanhat tiedot'}[a.source]||'Muu lähde'}
+function activitySummary(state, end=today()){
+  const start=addDays(end,-6), acts=state.activities.filter(a=>a.date>=start&&a.date<=end);
+  const groups={strength:0,endurance:0,sport:0,daily:0};
+  const counts={strength:0,endurance:0,sport:0,daily:0};
+  for(const a of acts){const k=activityCategory(a);groups[k]+=Number(a.duration)||0;counts[k]++}
+  return {minutes:groups,counts,importedStrength:acts.filter(a=>a.sport==='strength'&&a.source!=='manual'&&!(a.sets||[]).length).length};
+}
+function recoveryTrend(state,key,days=21){
+  const cut=addDays(today(),-(days-1));
+  return state.recovery.filter(r=>r.date>=cut&&r.date<=today()).sort((a,b)=>a.date.localeCompare(b.date))
+    .map(r=>({day:r.date,value:Number(r[key])})).filter(p=>p.value>0&&Number.isFinite(p.value));
+}
+function recoveryContext(state,date=today()){
+  const until=state.recovery.filter(r=>r.date<=date).sort((a,b)=>a.date.localeCompare(b.date));
+  const last3=until.slice(-3), baseline=until.slice(-24,-3);
+  if(baseline.length<10||last3.length<2)return null;
+  const avg=(x)=>x.reduce((s,n)=>s+n,0)/x.length;
+  const hrBase=baseline.map(x=>x.hrv).filter(x=>Number(x)>0), hrNow=last3.map(x=>x.hrv).filter(x=>Number(x)>0);
+  const rhBase=baseline.map(x=>x.restHr).filter(x=>Number(x)>0), rhNow=last3.map(x=>x.restHr).filter(x=>Number(x)>0);
+  if(hrBase.length<7||hrNow.length<2||rhBase.length<7||rhNow.length<2)return null;
+  const lowHRV=avg(hrNow)<avg(hrBase)*0.85, highRHR=avg(rhNow)>avg(rhBase)+5;
+  return {unusual:lowHRV&&highRHR,description:lowHRV&&highRHR?'HRV on viime öinä laskenut ja leposyke noussut omaan perustasoon verrattuna. Vahvista olo Smart Check-inillä; pelkät laitemittaukset eivät muuta harjoitusta.':'HRV:n ja leposykkeen yhdistelmässä ei ole selvää samanaikaista poikkeamaa.'};
+}
+let state = load();
+let tab = 'today';
+let activeModal = '';
+let editPlanId = '';
+let feedbackActivityId = '';
+let planWeek = monday(today()), selectedKind = 'gym-full-a', selectedMinutes = 45, chartExercise = 'bench', notice = '';
+let restUntil = 0;
+const el = () => document.querySelector('#app');
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = (v, decimal = 0) => Number(v || 0).toLocaleString('fi-FI', { maximumFractionDigits: decimal, minimumFractionDigits: decimal });
+const minutesInput = (v) => [20, 30, 45, 60, 75, 90].map(n => `<button class="choice ${n === v ? 'on' : ''}" data-action="minutes" data-minutes="${n}">${n} min</button>`).join('');
+const pill = (s, theme = '') => `<span class="pill ${theme}">${esc(s)}</span>`;
+const sportType = (s) => s === 'strength' ? 'STRENGTH' : s === 'run' ? 'RUNNING' : s === 'cycle' ? 'CYCLING' : s.toUpperCase();
+const activityTitle = (a) => ACTIVITIES[a.sport] || a.sport;
+const bp = (v) => `<div class="section-label">${v}</div>`;
+const btn = (action, title, variant = 'ghost', extra = '') => `<button class="btn ${variant}" data-action="${action}" ${extra}>${esc(title)}</button>`;
+// Remote bridge: credentials are never committed to GitHub or persistent app state.
+let workerUrl = localStorage.getItem('ultra-performance-worker-url') || '';
+let workerAdmin = sessionStorage.getItem('ultra-performance-worker-session') || '';
+let remoteStatus = null;
+let syncMessage = 'Automaattinen synkronointi käynnistyy, kun laite on paritettu ja yhteys on käytettävissä.';
+let autoSyncEnabled = localStorage.getItem('up62-auto-sync') !== 'off';
+let deviceCredential = null, lastAutoAttempt=0, syncBusy=false;
+let lastSyncAt=localStorage.getItem('up62-last-sync')||'';
+function authDB(){
+  return new Promise((resolve,reject)=>{
+    if(!('indexedDB' in window)){reject(Error('Tämä selain ei tue suojattua laiteavaimen tallennusta'));return;}
+    const req=indexedDB.open('ultra-performance-auth',1);
+    req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains('keys'))req.result.createObjectStore('keys');};
+    req.onerror=()=>reject(req.error||Error('Tietokanta ei ole käytettävissä'));
+    req.onsuccess=()=>resolve(req.result);
+  });
+}
+async function readDevice(){
+  const db=await authDB();return new Promise((resolve,reject)=>{
+    const tx=db.transaction('keys','readonly');const req=tx.objectStore('keys').get('device');
+    req.onsuccess=()=>resolve(req.result||null);req.onerror=()=>reject(req.error);tx.oncomplete=()=>db.close();
+  });
+}
+async function persistDevice(credential){
+  const db=await authDB();return new Promise((resolve,reject)=>{
+    const tx=db.transaction('keys','readwrite');tx.objectStore('keys').put(credential,'device');
+    tx.oncomplete=()=>{db.close();resolve()};tx.onerror=()=>reject(tx.error);
+  });
+}
+async function deleteDevice(){
+  const db=await authDB();return new Promise((resolve,reject)=>{
+    const tx=db.transaction('keys','readwrite');tx.objectStore('keys').delete('device');
+    tx.oncomplete=()=>{db.close();resolve()};tx.onerror=()=>reject(tx.error);
+  });
+}
+const deviceReadyPromise=readDevice().then(value=>{deviceCredential=value}).catch(e=>{console.info('Laitteen paritus ei ole käytettävissä:',e.message)});
+function storeRemoteInputs(){
+  const address=String(document.querySelector('#worker-url')?.value||'').trim();
+  const token=String(document.querySelector('#worker-admin')?.value||'').trim();
+  if(address){
+    const u=new URL(address);
+    if(u.protocol!=='https:'||u.username||u.password||u.search||u.hash)throw Error('Vain tavallinen HTTPS-osoite hyväksytään');
+    workerUrl=u.origin;localStorage.setItem('ultra-performance-worker-url',workerUrl);
+  }
+  if(token){
+    if(token.length<32)throw Error('Worker Access Tokenin pitää olla vähintään 32 merkkiä pitkä');
+    workerAdmin=token;
+    try{sessionStorage.setItem('ultra-performance-worker-session',token)}catch(e){console.info('Istuntotallennus ei käytettävissä')}
+  }
+}
+function configuredRemote(){
+  if(!workerUrl)throw Error('Worker-osoite puuttuu. Syötä HTTPS-osoite Settings-näkymässä.');
+  const u=new URL(workerUrl);
+  if(u.protocol!=='https:'||u.username||u.password||u.search||u.hash)throw Error('Worker-osoitteen pitää olla tavallinen HTTPS-osoite ilman muita kenttiä.');
+  return u.origin;
+}
+function base64url(bytes){return btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+async function deviceAuthorization(path,method){
+  if(!deviceCredential?.privateKey)throw Error('ADMIN_TOKEN puuttuu eikä tätä laitetta ole paritettu. Avaa Settings ja parita tämä laite kerran.');
+  const ts=String(Date.now());
+  const payload=new TextEncoder().encode(`${method}\n${path}\n${ts}`);
+  const signature=await crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},deviceCredential.privateKey,payload);
+  return `Device ${deviceCredential.id}:${ts}:${base64url(signature)}`;
+}
+async function remoteFetch(path,method='GET',body=null,adminOnly=false){
+  const base=configuredRemote();
+  await deviceReadyPromise;
+  const call=async(asDevice)=>{
+    const auth=asDevice?await deviceAuthorization(path,method):'Bearer '+workerAdmin;
+    const resp=await fetch(base+path,{method,headers:{Authorization:auth,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),cache:'no-store'});
+    const data=await resp.json().catch(()=>({}));
+    if(!resp.ok)throw Object.assign(Error(data?.error||`HTTP ${resp.status}`),{status:resp.status});
+    return data;
+  };
+  if(adminOnly&&!workerAdmin)throw Error('Tämä toiminto vaatii ADMIN_TOKEN-tunnuksen tähän istuntoon.');
+  if(workerAdmin){try{return await call(false)}catch(e){if(e.status===401&&deviceCredential&&!adminOnly)return call(true);throw e}}
+  return call(true);
+}
+async function pairDevice(){
+  try{
+    storeRemoteInputs();await deviceReadyPromise;
+    if(!workerAdmin)throw Error('Syötä ensin ADMIN_TOKEN ja paina Tallenna.');
+    if(!window.crypto?.subtle)throw Error('Suojattu WebCrypto-yhteys puuttuu');
+    if(deviceCredential){syncMessage='Tämä laite on jo paritettu.';render();return}
+    const keys=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},false,['sign','verify']);
+    const publicKey=await crypto.subtle.exportKey('jwk',keys.publicKey);
+    const id=Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b=>b.toString(16).padStart(2,'0')).join('');
+    await remoteFetch('/device/enroll','POST',{id,publicKey},true);
+    await persistDevice({id,privateKey:keys.privateKey});deviceCredential={id,privateKey:keys.privateKey};
+    syncMessage='Laite paritettu turvallisesti. Automaattinen synkronointi toimii ilman ADMIN_TOKENia tässä selaimessa.';
+    render();void autoSyncIfDue(true);
+  }catch(e){syncMessage='Paritusvirhe: '+e.message;render()}
+}
+async function unpairDevice(){
+  if(!confirm('Poistetaanko tämän selaimen automaattiyhteys? Harjoitushistoria säilyy.'))return;
+  try{
+    await deviceReadyPromise;
+    if(deviceCredential&&workerAdmin)await remoteFetch('/device/revoke','POST',{id:deviceCredential.id},true);
+    await deleteDevice();deviceCredential=null;
+    syncMessage='Laitteen avain poistettu. Cloudflare-yhteys vaatii jälleen ADMIN_TOKENin.';
+  }catch(e){syncMessage='Parituksen poistaminen epäonnistui: '+e.message}
+  render();
+}
+async function testRemote(){
+  try{storeRemoteInputs()}catch(e){syncMessage='Yhteysvirhe: '+e.message;render();return}
+  syncMessage='Tarkistetaan Cloudflare-yhteyttä…';render();
+  try{remoteStatus=await remoteFetch('/status');syncMessage=`Välipalvelu vastaa. Garmin ${remoteStatus.garminConfigured?'valmis':'ei asetettu'}, Oura ${remoteStatus.ouraConnected?'yhdistetty':'ei vielä yhdistetty'}.`}
+  catch(e){remoteStatus=null;syncMessage='Yhteysvirhe: '+e.message}
+  render();
+}
+function importSnapshot(snapshot){
+  if(!snapshot||typeof snapshot!=='object')throw Error('Taustahaun tuloksia ei löytynyt. Varmista, että Worker 6.2 on julkaistu.');
+  const err=[];let a=0,r=0,w=0;
+  if(Array.isArray(snapshot.garmin)&&snapshot.garmin.length){
+    try{a=importGarminJSON(state,snapshot.garmin).added}catch(e){if(!e.message.includes('Uusia aktiviteetteja ei löytynyt'))err.push('Garmin-tuonti: '+e.message)}
+  }
+  if(Array.isArray(snapshot.ouraRecovery)&&snapshot.ouraRecovery.length){
+    try{const before=new Set(state.recovery.map(x=>x.date));importOuraJSON(state,{data:snapshot.ouraRecovery});r=state.recovery.filter(x=>!before.has(x.date)).length}
+    catch(e){err.push('Oura palautuminen: '+e.message)}
+  }
+  if(Array.isArray(snapshot.ouraWorkouts)&&snapshot.ouraWorkouts.length){
+    try{w=importOuraWorkoutJSON(state,{data:snapshot.ouraWorkouts}).added}catch(e){err.push('Oura-aktiviteetit: '+e.message)}
+  }
+  const sourceErrors=Object.entries(snapshot.errors||{}).map(([k,v])=>`${k}: ${v}`);
+  return {a,r,w,errors:[...err,...sourceErrors],timestamp:snapshot.updatedAt};
+}
+async function synchronizeRemote({automatic=false}={}){
+  if(syncBusy)return;
+  if(!automatic){try{storeRemoteInputs()}catch(e){syncMessage='Synkronointi epäonnistui: '+e.message;render();return}}
+  syncBusy=true;
+  if(!automatic){syncMessage='Haetaan Garmin- ja Oura-tiedot…';render()}
+  try{
+    const status=await remoteFetch('/status');remoteStatus=status;
+    let snapshot;
+    if(automatic){
+      const cached=await remoteFetch('/snapshot');snapshot=cached.snapshot;
+      if(!snapshot||Date.now()-Date.parse(snapshot.updatedAt)>6*3600e3){snapshot=(await remoteFetch('/sync','POST')).snapshot}
+    }else{snapshot=(await remoteFetch('/sync?force=1','POST')).snapshot}
+    const result=importSnapshot(snapshot);
+    if(result.a||result.r||result.w)commit(false);
+    lastSyncAt=result.timestamp||new Date().toISOString();localStorage.setItem('up62-last-sync',lastSyncAt);
+    syncMessage=`${automatic?'Automaattinen päivitys':'Synkronointi'}: ${result.a} uutta Garmin-harjoitusta, ${result.r} uutta palautumispäivää, ${result.w} Oura-aktiviteettia. ${result.errors.join(' / ')}`;
+  }catch(e){syncMessage=`${automatic?'Automaattisen päivityksen':'Synkronoinnin'} virhe: ${e.message}`}
+  finally{syncBusy=false;render()}
+}
+async function autoSyncIfDue(force=false){
+  if(!autoSyncEnabled||!workerUrl||document.visibilityState==='hidden'||!navigator.onLine)return;
+  await deviceReadyPromise;
+  if(!workerAdmin&&!deviceCredential)return;
+  if(!force&&Date.now()-lastAutoAttempt<30*60e3)return;
+  lastAutoAttempt=Date.now();await synchronizeRemote({automatic:true});
+}
+async function connectOura(){
+  try{storeRemoteInputs();const data=await remoteFetch('/oura/start','POST');if(!data.url?.startsWith('https://cloud.ouraring.com/'))throw Error('Ouran kirjautumisosoite puuttuu');location.assign(data.url);}
+  catch(e){syncMessage='Oura-yhteys: '+e.message;render();}
+}
+async function disconnectOura(){
+  if(!confirm('Katkaistaanko Ouran yhteys? Aiemmin tuodut mittaukset säilyvät tässä sovelluksessa.'))return;
+  try{await remoteFetch('/oura/disconnect','POST');remoteStatus=await remoteFetch('/status');syncMessage='Oura-yhteys katkaistu.';}
+  catch(e){syncMessage='Katkaisu epäonnistui: '+e.message;}
+  render();
+}
+
+const logAction = (message, reason, type = 'user') => state.changes.unshift({ id: uid('log'), date: new Date().toISOString(), message, reason, type });
+function commit(reRender = true) { if (!save(state))
+    alert('Tallennustila ei ole käytettävissä. Vie nykyiset tiedot varmuuskopioksi.'); if (reRender)
+    render(); }
+function flash(msg) { const t = document.getElementById('toast'); if (!t)
+    return; t.textContent = msg; t.hidden = false; setTimeout(() => { t.hidden = true; }, 3000); }
+const dayName = (day) => new Date(`${day}T12:00:00`).toLocaleDateString('fi-FI', { weekday: 'short' }).replace('.', '').toUpperCase();
+const dayNum = (day) => day.slice(8);
+function nav() { const items = [['today', '⌁', 'Today'], ['plan', '▦', 'Plan'], ['train', '✚', 'Train'], ['analyze', '▥', 'Analyze'], ['settings', '⚙', 'Settings']]; return `<nav class="nav" aria-label="Päävalikko"><div class="nav-inner">${items.map(([k, icon, label]) => `<button data-action="tab" data-tab="${k}" class="${tab === k ? 'active' : ''}" aria-current="${tab === k ? 'page' : 'false'}"><span class="symbol">${icon}</span><span>${label}</span></button>`).join('')}</div></nav>`; }
+function header() { return `<header class="top"><div class="brand"><div class="brand-icon">UP</div><div><strong>ULTRA PERFORMANCE</strong><span>HYBRID TRAINING SYSTEM · 6.2</span></div></div><div class="top-right"><div class="meta-date">${esc(new Date().toLocaleDateString('fi-FI', { day: 'numeric', month: 'short' }))}<br><span style="color:#cdd6d6">${esc(new Date().toLocaleDateString('fi-FI', { weekday: 'long' }))}</span></div><div class="avatar">HYB</div></div></header>`; }
+function todayView() {
+    const stat = weekStats(state), co = coachRecommendation(state), r = getRecovery(state), plan = co.plan, advice = recoveryAdvice(state);
+    const recent = state.activities.slice().sort((a, b) => b.startedAt.localeCompare(a.startedAt)).slice(0, 4);
+    const summary=activitySummary(state),trend=recoveryContext(state);
+    return `<div class="eyebrow">TRAINING INTELLIGENCE / TODAY</div><h1 style="margin-top:8px">Hybridi ilman kompromisseja.</h1><p class="lead">Adaptive Coach priorisoi harjoittelun kokonaiskuormituksen ja käytettävissä olevan ajan mukaan. Sinä päätät lopullisesta toteutuksesta.</p>
+ <section class="card hero mt"><div class="row between"><span class="eyebrow">NEXT RECOMMENDED SESSION</span>${pill(plan?.priority === 'key' ? 'KEY SESSION' : 'ADAPTIVE', 'green')}</div>
+ <div class="headline">${esc(plan?.title || 'Suunnittele seuraava harjoitus')}</div>
+ <div class="badge-line">${pill(plan ? formatDuration(plan.duration) : 'Joustava')}${pill(plan ? ACTIVITIES[plan.sport] : 'Hybrid')}${plan?.adjustment ? pill('Mukautettu', 'warn') : ''}</div>
+ <p class="lead">${esc(co.reason)}</p>${co.warning ? `<div class="warning mt">${esc(co.warning)}</div>` : ''}
+ <div class="btn-row mt"><button class="btn primary" ${r?.pain ? 'disabled title="Kipuoireet: arvioi oireet ennen treeniä"' : ''} data-action="${plan ? 'start-plan' : 'tab'}" ${plan ? `data-id="${esc(plan.id)}"` : 'data-tab="plan"'}>${plan ? 'Aloita harjoitus' : 'Avaa suunnitelma'} →</button><button class="btn ghost" data-action="tab" data-tab="train">Valitse muu harjoitus</button></div></section>
+ ${bp('VIIMEISET 7 PÄIVÄÄ')}<div class="kpis"><div class="kpi"><div class="tag">VOIMAHARJOITUKSET</div><div class="value green">${stat.strength}</div><div class="unit">${stat.sets} työsarjaa</div></div><div class="kpi"><div class="tag">JUOKSU</div><div class="value">${fmt(stat.runKm, 1)}</div><div class="unit">km · ${stat.runMinutes} min</div></div><div class="kpi"><div class="tag">MUU KESTÄVYYS</div><div class="value blue">${Math.max(0,summary.minutes.endurance-stat.runMinutes)}</div><div class="unit">min · pyöräily, vaellus, hiihto</div></div></div>
+ <div class="title-row"><h2>Recovery context</h2>${pill(r && r.date === today() ? 'CHECK-IN DONE' : 'NO CHECK-IN', r && r.date === today() ? 'green' : '')}</div>
+ <section class="card"><div class="split"><div><label>OMA VIRE</label><div class="kpi value" style="border:0;padding:4px 0;background:transparent;min-height:0">${r && r.date === today() ? r.energy > 0 ? `${r.energy}/5` : "—" : '—'}</div></div><div><label>JALKOJEN TUNTEMUS</label><div class="kpi value" style="border:0;padding:4px 0;background:transparent;min-height:0">${r && r.date === today() ? `${r.legs}/3` : '—'}</div></div></div>
+ <div class="divider"></div><p class="soft">${advice.reduce ? 'Kuormitus viittaa mahdolliseen keventämistarpeeseen.' : 'Yksittäinen mittaus ei päätä harjoittelusta.'} ${esc(trend?.description||'Oura-tietoja arvioidaan vasta riittävän vertailuhistorian jälkeen.')} <span class="source-chip">${esc(autoSyncEnabled?'Automaattinen synkronointi käytössä':'Automaattinen synkronointi pois')}</span></p><div class="btn-row mt">${btn('recovery', 'Päivän check-in', 'primary')}${btn('activity', '+ Satunnainen treeni', 'ghost')}</div></section>
+ <div class="title-row"><h2>Tulevat harjoitukset</h2><button class="btn sm ghost" data-action="tab" data-tab="plan">Koko suunnitelma →</button></div>
+ <section class="card"><div class="events">${state.plan.filter(p => p.status === 'planned' && p.date >= today()).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 4).map(planEvent).join('') || '<div class="empty">Ei tulevia harjoituksia. Luo uusi viikko Plan-näkymässä.</div>'}</div></section>
+ <div class="title-row"><h2>Viimeisimmät suoritukset</h2><span class="soft">${state.activities.length} yhteensä</span></div><section class="card">${recent.length ? recent.map(activityRow).join('') : '<div class="empty">Ei vielä harjoituksia. Aloita ensimmäinen harjoituksesi.</div>'}</section>
+ `;
+}
+function planEvent(p) { return `<div class="event ${p.status === 'done' ? 'complete' : ''}"><div class="day"><b>${dayNum(p.date)}</b><small>${dayName(p.date)}</small></div><div><div class="type ${p.sport === 'run' || p.sport === 'cycle' ? 'endurance' : ''}">${sportType(p.sport)} · ${p.priority.toUpperCase()} ${p.locked ? '· LOCKED' : ''}</div><div class="name">${esc(p.title)}</div><div class="detail">${p.duration} min · ${p.status === 'done' ? 'Valmis' : p.status === 'skipped' ? 'Ohitettu' : p.adjustment ? 'Kevennetty suunnitelma' : 'Suunniteltu'}</div></div><div class="controls"><button class="btn sm ghost" data-action="edit-plan" data-id="${esc(p.id)}" aria-label="Muokkaa ${esc(p.title)}">✎</button><button class="btn sm ${p.locked ? 'primary' : 'ghost'}" data-action="lock-plan" data-id="${esc(p.id)}" aria-label="Lukitse harjoitus">${p.locked ? '◆' : '◇'}</button></div></div>`; }
+function activityRow(a) { return `<div class="history-row"><div><div class="date">${fiDate(a.date)} · ${esc(a.source === 'legacy' ? 'OLD DATA' : a.source.toUpperCase())}</div><b>${esc(displayActivityTitle(a))}</b><p>${a.duration} min${a.distanceKm ? ' · ' + fmt(a.distanceKm, 1) + ' km' : ''}${a.sessionRpe ? ' · sRPE ' + a.sessionRpe : ''}${a.sets.length ? ' · ' + a.sets.length + ' sarjaa' : ''}</p></div>${pill(categoryName(a), '')}</div>`; }
+function planView() {
+    makeWeek(state, planWeek);
+    const weekEnd = addDays(planWeek, 6);
+    const arr = state.plan.filter(p => p.date >= planWeek && p.date <= weekEnd).sort((a, b) => a.date.localeCompare(b.date));
+    const done = arr.filter(p => p.status === 'done').length;
+    return `<div class="eyebrow">ADAPTIVE PLANNING</div><h1 class="mt">Training Plan</h1><p class="lead">Key Session ensin. Lukitut harjoitukset säilyvät, eikä väliin jääneitä treenejä siirretä automaattisesti kuormittamaan seuraavia päiviä.</p>
+ <section class="card mt"><div class="row between"><button class="btn sm ghost" data-action="prev-week">← Edellinen</button><strong>${fiDate(planWeek)} – ${fiDate(weekEnd)}</strong><button class="btn sm ghost" data-action="next-week">Seuraava →</button></div><div class="badge-line">${pill(`${done}/${arr.length} toteutunut`, 'green')}${pill(state.profile.capacity.toUpperCase())}</div><div class="divider"></div><div class="events">${arr.map(p => `<div>${planEvent(p)}<div class="btn-row mt" style="justify-content:flex-end">${p.status === 'planned' ? `${btn('start-plan', 'Aloita', 'primary', `data-id="${esc(p.id)}"`)}${btn('skip-plan', 'Ohita', 'ghost', `data-id="${esc(p.id)}"`)}` : ''}</div></div>`).join('')}</div></section>
+ <div class="title-row"><h2>Viikon kapasiteetti</h2>${pill('SUSTAINABLE')}</div><section class="card"><p class="soft">Ohjelma voi painottua 4, 5 tai 6–7 harjoitukseen. Harjoitusmäärän merkittävä lisäys vaatii hyväksyntäsi.</p><div class="choice-row mt">${[['minimum', 'Minimum · 4'], ['balanced', 'Balanced · 5'], ['performance', 'Performance · 6–7']].map(([k, l]) => `<button class="choice ${state.profile.capacity === k ? 'on' : ''}" data-action="capacity" data-value="${k}">${l}</button>`).join('')}</div><p class="micro mt">Kapasiteetin valinta koskee uutta viikkosuunnitelmaa. Ohjelma ei kasva automaattisesti vain siksi, että aikaa olisi enemmän.</p><div class="btn-row mt">${btn('rebuild-plan', 'Luo viikko uudelleen', 'primary')}${btn('activity', 'Kirjaa muu liikunta')}</div></section>
+ <div class="title-row"><h2>Coach change log</h2></div><section class="card">${state.changes.slice(0, 10).map(c => `<div class="history-row"><div><div class="date">${new Date(c.date).toLocaleDateString('fi-FI')} · ${c.type.toUpperCase()}</div><b>${esc(c.message)}</b><p>${esc(c.reason)}</p></div></div>`).join('') || '<div class="empty">Muutoksia ei ole vielä tehty.</div>'}</section>`;
+}
+function kindsBySport() { return [['VOIMA / SALI', ['gym-full-a', 'gym-full-b', 'gym-upper', 'gym-lower', 'gym-push', 'gym-pull']], ['KOTONA / KAHVAKUULA', ['home-full', 'home-upper', 'home-lower']], ['RUNNING', ['run-easy', 'run-quality', 'run-long']], ['CYCLING', ['cycle-easy', 'cycle-quality', 'cycle-long']]]; }
+function trainView() {
+    if (state.active)
+        return activeView();
+    const t = TEMPLATES[selectedKind], preview = generate(state, selectedKind, selectedMinutes);
+    return `<div class="eyebrow">SESSION GENERATOR</div><h1 class="mt">Train</h1><p class="lead">Valitse laji, päivän painotus ja aikabudjetti. Valmentaja sovittaa harjoituksen toteutuneeseen kuormitukseen.</p>
+ <section class="card mt"><div class="section-label">TIME AVAILABLE</div><div class="choice-row">${minutesInput(selectedMinutes)}</div><div class="section-label">WORKOUT LIBRARY</div>${kindsBySport().map(([n, ids]) => `<div class="section-label">${n}</div><div class="choice-row">${ids.map(k => `<button class="choice ${selectedKind === k ? 'on' : ''}" data-action="choose-kind" data-kind="${k}">${esc(TEMPLATES[k].title)}</button>`).join('')}</div>`).join('')}</section>
+ <div class="title-row"><h2>Session preview</h2>${pill(`${preview.estimatedMinutes} min`, preview.reduced ? 'warn' : 'green')}</div>
+ <section class="card"><div class="eyebrow">${esc(t.focus)}</div><h2 style="margin:7px 0 10px">${esc(preview.title)}</h2><div class="badge-line">${pill(`${preview.exercises.reduce((a, e) => a + e.sets, 0)} työsarjaa`)}${preview.sport === 'strength' ? pill('RIR ' + preview.rirTarget) : pill('AEROBIC')} ${pill(preview.venue === 'home' ? '1 × kahvakuula' : ACTIVITIES[preview.sport])}</div>
+ <div class="explain mt">${esc(preview.reason)}</div><div class="divider"></div>
+ ${preview.sport === 'strength' ? preview.exercises.map((e, i) => `<div class="history-row"><div><div class="date">${String(i + 1).padStart(2, '0')} · ${e.group.toUpperCase()}</div><b>${esc(e.name)}</b><p>${e.sets} × ${e.min}–${e.max} · ${e.rest} s lepo${e.perSide ? ' · / puoli' : ''}</p></div><div class="right"><span class="pill">${progression(state, e).weight ?? '—'} kg</span></div></div>`).join('') : preview.segments.map(s => `<div class="history-row"><div><b>${esc(s.title)}</b><p>${esc(s.effort)}</p></div><strong>${s.minutes} min</strong></div>`).join('')}
+ <button class="btn primary block mt" data-action="start-selected">Aloita ${esc(preview.title)} →</button></section>
+ <button class="btn block ghost mt" data-action="activity">Kirjaa satunnainen liikunta: padel, hiking, hiihto…</button>`;
+}
+function activeView() {
+    const d = state.active;
+    const s = d.session;
+    const done = d.sets.filter(x => x.done).length;
+    return `<div class="eyebrow">ACTIVE TRAINING SESSION</div><h1 class="mt">${esc(s.title)}</h1><p class="lead">${esc(s.reason)}</p><div class="time-strip"><div><span>SESSION</span><br><b id="elapsed">00:00</b></div><div><span>SETS / COMPLETE</span><br><b>${done}/${d.sets.length}</b></div><div><span>REST</span><br><b id="rest">—</b></div><button class="btn sm ghost" data-action="rest-skip">Ohita</button></div>
+ ${s.sport === 'strength' ? s.exercises.map(e => { const p = progression(state, e); return `<div class="session-ex"><div class="row between"><h3>${esc(e.name)}</h3>${pill(e.group)}</div><p class="hint">${esc(e.note)}<br>${esc(p.reason)}</p><div class="set"><span>#</span><small>KG</small><small>REPS</small><small>RIR</small><small>✓</small></div>${d.sets.filter(x => x.exerciseId === e.id).map((set) => `<div class="set" data-setrow="${esc(set.id)}"><span>${set.set}</span><input inputmode="decimal" type="number" min="0" max="500" step="0.5" value="${set.weight}" data-set="${esc(set.id)}" data-field="weight" aria-label="Paino sarjalle ${set.set}"><input inputmode="numeric" type="number" min="0" max="50" value="${set.reps}" data-set="${esc(set.id)}" data-field="reps" aria-label="Toistot sarjalle ${set.set}"><input inputmode="numeric" type="number" min="0" max="6" value="${set.rir}" data-set="${esc(set.id)}" data-field="rir" aria-label="RIR sarjalle ${set.set}"><button class="btn sm ${set.done ? 'checked' : 'done'}" data-action="set-done" data-id="${esc(set.id)}" aria-label="Merkitse sarja ${set.set} tehdyksi">✓</button></div>`).join('')}</div>`; }).join('') : `<section class="card mt"><div class="events">${s.segments.map((x, i) => `<div class="event"><div class="day"><b>${i + 1}</b><small>OSIO</small></div><div><div class="name">${esc(x.title)}</div><div class="detail">${esc(x.effort)}</div></div><strong>${x.minutes} min</strong></div>`).join('')}</div></section>`}
+ <div class="btn-row mt"><button class="btn primary" data-action="finish-modal">Lopeta ja kirjaa →</button><button class="btn danger" data-action="discard">Hylkää harjoitus</button></div>`;
+}
+function svgSpark(points, tone = '#31946e') { if (points.length < 2)
+    return '<div class="empty">Vertailukelpoisia havaintoja ei vielä ole.</div>'; const min = Math.min(...points), max = Math.max(...points), rg = max - min || 1; const coords = points.map((y, i) => `${12 + (i / (points.length - 1)) * 316},${90 - ((y - min) / rg) * 65}`).join(' '); return `<svg width="100%" height="110" viewBox="0 0 340 110" role="img" aria-label="Kehityskäyrä"><line x1="10" x2="330" y1="94" y2="94" stroke="#343e41"/><line x1="10" x2="330" y1="53" y2="53" stroke="#343e41" stroke-dasharray="4 5"/><polyline points="${coords}" fill="none" stroke="${tone}" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>${points.map((y, i) => `<circle cx="${12 + i / (points.length - 1) * 316}" cy="${90 - (y - min) / rg * 65}" r="3.5" fill="${tone}"/>`).join('')}</svg>`; }
+function trendCard(state,key,label,unit,precision=0,tone='#65a7c3'){
+  const points=recoveryTrend(state,key,21), n=points.length;
+  const latest=n?points[n-1].value:null;
+  if(n<2)return `<div class="trend-card"><div class="trend-head"><b>${esc(label)}</b><span class="source-chip">Oura</span></div><div class="empty mt">Ei vielä tarpeeksi mittauksia</div><p class="trend-meta mt">${n} havaintoa · 21 päivän jakso</p></div>`;
+  const values=points.map(p=>p.value), min=Math.min(...values), max=Math.max(...values), range=Math.max(1,max-min);
+  const coords=points.map((p,i)=>[16+i/(n-1)*298,86-(p.value-min)/range*65]);
+  const line=coords.map(([x,y],i)=>`${i?'L':'M'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const avg=values.reduce((a,b)=>a+b,0)/n;
+  const dots=coords.map(([x,y])=>`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.5" fill="${tone}"/>`).join('');
+  const svg=`<svg viewBox="0 0 330 108" role="img" aria-label="${esc(label)}, ${n} mittausta"><path d="M16 86H314" stroke="#354349" stroke-dasharray="3 5" fill="none"/><path d="${line}" stroke="${tone}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" fill="none"/>${dots}</svg>`;
+  return `<div class="trend-card"><div class="trend-head"><b>${esc(label)}</b><span class="source-chip">Oura</span></div><div class="row between mt"><strong style="font-size:22px;font-variant-numeric:tabular-nums">${fmt(latest,precision)} <small>${esc(unit)}</small></strong><span class="trend-meta">Keskiarvo ${fmt(avg,precision)}</span></div>${svg}<p class="trend-meta">${n} havaintoa / 21 päivää · ${fiDate(points[0].day)} – ${fiDate(points[n-1].day)}</p></div>`;
+}
+function analyzeView() {
+    const s7 = weekStats(state), rec = [...state.recovery].sort((a, b) => a.date.localeCompare(b.date)).slice(-21), summary=activitySummary(state);
+    const ex = EXERCISES.find(x => x.id === chartExercise) || EXERCISES[0], hist = exerciseHistory(state, chartExercise).slice(-12);
+    const plot = hist.map(h => ex.venue === 'home' ? h.reps : h.kg * (1 + h.reps / 30));
+    const targets = { Rinta: 8, Selkä: 10, Etureidet: 8, Takareidet: 6, Olkapäät: 6, Pohkeet: 4, Hauis: 3, Ojentaja: 3 };
+    return `<div class="eyebrow">PERFORMANCE ANALYTICS</div><h1 class="mt">Analyze</h1><p class="lead">Mitatut tulokset erotetaan arvioista. Yksi heikko harjoitus tai Oura-lukema ei ole trendi.</p>
+ ${bp('MOVING 7 DAYS')}<div class="metrics-five">
+ <div class="kpi"><div class="tag">VOIMASARJAT</div><div class="value green">${s7.sets}</div><div class="unit">kirjattu · ${summary.counts.strength} voimasuoritusta</div></div>
+ <div class="kpi"><div class="tag">JUOKSU</div><div class="value">${fmt(s7.runKm,1)}</div><div class="unit">km</div></div>
+ <div class="kpi"><div class="tag">MUU KESTÄVYYS</div><div class="value blue">${Math.max(0,summary.minutes.endurance-s7.runMinutes)}</div><div class="unit">min (pyöräily, vaellus, hiihto)</div></div>
+ <div class="kpi"><div class="tag">MUU URHEILU</div><div class="value">${summary.minutes.sport}</div><div class="unit">min (esim. padel)</div></div>
+ <div class="kpi"><div class="tag">ARKILIIKUNTA</div><div class="value blue">${summary.minutes.daily}</div><div class="unit">min (kävely, pihatyöt, kotityöt)</div></div></div>
+ <p class="soft mt">Arkiliikunta vaikuttaa kokonaisrasitukseen, mutta ei täytä suunniteltuja kestävyys- tai hypertrofiatavoitteita. Garminista/Ourasta tuotu voimatreeni ei lisää sarjoja ilman sarjatietoja.</p>
+ <div class="title-row"><h2>Muscle volume coverage</h2>${pill('DIRECT SETS')}</div><section class="card"><p class="soft">Viimeisten 7 päivän suorat työsarjat verrattuna alustaviin viitteellisiin tavoitteisiin. Epäsuoraa kuormitusta ei sisällytetä palkkiin.</p><div class="mt">${Object.entries(targets).map(([name, target]) => `<div class="measure"><span>${name}</span><div class="bar"><i style="width:${Math.min(100, (s7.groups[name] || 0) / target * 100)}%"></i></div><div class="number">${s7.groups[name] || 0}</div></div>`).join('')}</div></section>
+ <div class="title-row"><h2>Exercise progression</h2></div><section class="card"><label for="exercise-chart">Valitse liike</label><select id="exercise-chart" data-action="exercise-chart">${EXERCISES.map(e => `<option value="${e.id}" ${chartExercise === e.id ? 'selected' : ''}>${esc(e.name)}</option>`).join('')}</select><div class="mt">${svgSpark(plot)}</div><p class="soft">${hist.length ? `${hist.length} havaintoa. ${ex.venue === 'home' ? 'Enimmäistoistot sarjassa.' : 'Arvioitu 1RM on vain vertailuindeksi.'}` : 'Sarjatiedot ilmestyvät tähän harjoitusten jälkeen.'}</p></section>
+ <div class="title-row"><h2>Oura Recovery Analytics</h2>${pill(`${rec.length} mittauspäivää`)}</div>
+ <div class="trend-grid">${trendCard(state,'hrv','Yön HRV','ms',0,'#83c9a3')}${trendCard(state,'restHr','Leposyke','bpm',0,'#b6bdd7')}${trendCard(state,'sleepHours','Uni','h',1,'#90b6d9')}${trendCard(state,'readiness','Readiness','/100',0,'#a2c79b')}</div>
+ <p class="soft mt">Mittaukset ovat kuvailevia. Niiden yksittäiset muutokset eivät ole diagnooseja eivätkä itsenäisesti muuta harjoitussuunnitelmaa. Oma Smart Check-in täydentää tulkintaa.</p>
+ <div class="title-row"><h2>Activity history</h2></div><section class="card">${state.activities.slice().sort((a, b) => b.startedAt.localeCompare(a.startedAt)).slice(0, 25).map(a => `<details class="history-row"><summary><b>${esc(displayActivityTitle(a))}</b> · ${fiDate(a.date)} · ${a.duration} min <span class="source-chip">${esc(sourceName(a))}</span></summary><p>${esc(categoryName(a))} · ${a.distanceKm ? fmt(a.distanceKm, 2) + ' km · ' : ''}sRPE ${a.sessionRpe || 'ei tietoa'} · ${a.sets.length} sarjaa</p>${a.sets.slice(0, 24).map(x => `<p>${esc(x.name)} ${x.weight} kg × ${x.reps} · RIR ${x.rir}</p>`).join('')}${(!a.sessionRpe&&(activityCategory(a)!=='daily'||a.duration>=60)) ? `<button class="btn sm primary mt" data-action="feedback-activity" data-id="${esc(a.id)}">Smart Check-in</button>` : ''}<button class="btn sm danger mt" data-action="delete-activity" data-id="${esc(a.id)}">Poista merkintä</button></details>`).join('') || '<div class="empty">Ei vielä kirjattuja harjoituksia.</div>'}</section>`;
+}
+function settingsView() {
+    const p = state.profile;
+    return `<div class="eyebrow">PERFORMANCE SYSTEM / SETTINGS</div><h1 class="mt">Settings</h1><p class="lead">Oma valmennusprofiili, harjoitusvälineet, tietoturva ja varmuuskopiot.</p>
+ <section class="card mt"><h2>Training profile</h2><div class="split mt"><div class="field"><label for="goalWeight">Painotavoite · kg</label><input id="goalWeight" data-setting="goalWeight" type="number" min="35" max="250" step="0.5" value="${p.goalWeight}"></div><div class="field"><label for="kettlebellKg">Kahvakuula · kg</label><input id="kettlebellKg" data-setting="kettlebellKg" type="number" min="2" max="60" step="2" value="${p.kettlebellKg}"></div></div><div class="field"><label>Voimaharjoittelun jako</label><div class="choice-row">${[['full', 'Full Body'], ['ul', 'Upper / Lower'], ['ppl', 'Push / Pull / Legs']].map(([v, l]) => `<button class="choice ${p.split === v ? 'on' : ''}" data-action="split" data-value="${v}">${l}</button>`).join('')}</div></div><div class="split"><div class="field"><label for="maxMinutes">Normaalin treenin aika</label><select id="maxMinutes" data-setting="maxMinutes">${[30, 45, 60, 75, 90].map(n => `<option ${p.maxMinutes === n ? 'selected' : ''} value="${n}">${n} min</option>`).join('')}</select></div><div class="field"><label for="capacitySelect">Viikon kapasiteetti</label><select id="capacitySelect" data-setting="capacity">${[['minimum', 'Minimum'], ['balanced', 'Balanced'], ['performance', 'Performance']].map(([v, l]) => `<option ${p.capacity === v ? 'selected' : ''} value="${v}">${l}</option>`).join('')}</select></div></div><p class="soft">Asetukset eivät pakota lisäämään viikkovolyymia. Päivän aika ja harjoituspaikka voidaan aina vaihtaa Train-näkymässä.</p></section>
+ <div class="title-row"><h2>Adaptive Autopilot</h2></div><section class="card"><div class="row between"><div><strong>Automaattiset pienet mukautukset</strong><p class="soft">Kuormituksen tai väsymyksen mukaiset kevennykset saman lajin sisällä</p></div><input type="checkbox" data-setting="autopilot" ${p.autopilot ? 'checked' : ''} aria-label="Adaptive Autopilot käytössä"></div><div class="divider"></div><p class="soft">Lajin vaihto vaatii aina hyväksynnän. Lukitut harjoitukset eivät muutu automaattisesti. Suuret volyymimuutokset eivät ole automaattisia.</p></section>
+ <div class="title-row"><h2>Data connections</h2></div><section class="card">
+  <div class="row between"><strong>Garmin Connect</strong>${pill(remoteStatus?.garminConfigured?'VALMIS SYNKRONOINTIIN':'EI YHDISTETTY',remoteStatus?.garminConfigured?'green':'warn')}</div>
+  <p class="soft mt">Garmin Personal API -avain on vain Cloudflare Worker Secret -tallennuksessa. Garminin harjoitukset tuodaan tästä turvallisen välipalvelun kautta.</p>
+  <div class="divider"></div>
+  <div class="row between"><strong>Oura</strong>${pill(remoteStatus?.ouraConnected?'YHDISTETTY':'EI YHDISTETTY',remoteStatus?.ouraConnected?'green':'warn')}</div>
+  <p class="soft mt">Ouran yhdistys tapahtuu OAuth2-kirjautumisen kautta. Uni, HRV, leposyke, Readiness sekä Ouran tunnistamat Workout-aktiviteetit voidaan tuoda harjoitushistoriaan.</p>
+  <div class="field mt"><label for="worker-url">Oma Cloudflare Worker -osoite</label><input type="url" id="worker-url" placeholder="https://ultra-performance-api.example.workers.dev" value="${esc(workerUrl)}" spellcheck="false" autocomplete="url"></div>
+  <div class="field"><label for="worker-admin">Worker Access Token (väh. 32 merkkiä, vain tämän selainistunnon muistiin)</label><input type="password" id="worker-admin" placeholder="Syötä Workerissä määritelty ADMIN_TOKEN" autocomplete="off"><p class="micro mt">${workerAdmin ? '✓ ADMIN_TOKEN on käytettävissä vain tässä istunnossa.' : (deviceCredential ? '✓ Tämä laite on paritettu, ADMIN_TOKENia ei tarvita normaaliin synkronointiin.' : 'ADMIN_TOKEN puuttuu. Parita laite kertaluontoista kirjautumista varten.')}</p></div>
+  <div class="btn-row mt">${btn('remote-save','Tallenna osoite ja tunniste','primary')}${btn('remote-test','Testaa yhteys')}${btn('remote-sync','Synkronoi nyt')}</div>
+  <div class="btn-row mt">${btn('remote-oura','Yhdistä Oura OAuth')}${remoteStatus?.ouraConnected?btn('remote-disconnect','Katkaise Oura-yhteys','danger'):''}</div>
+  <div class="divider"></div><div class="row between"><div><strong>Automaattinen synkronointi</strong><p class="soft">Sovelluksen avautuessa ja noin 30 minuutin välein, kun sovellus on avoinna. Pilven taustahaku määritetään erikseen Cloudflaressa.</p></div><input type="checkbox" id="auto-sync" data-auto-sync ${autoSyncEnabled?'checked':''} aria-label="Automaattinen synkronointi"></div>
+  <p class="micro mt">${deviceCredential?'✓ Laite on paritettu suojatulla, laitekohtaisella avaimella.':'Automaattista sisäänkirjautumista varten parita tämä laite kerran ADMIN_TOKENin avulla.'} ${lastSyncAt?'Viimeisin palvelimen datapaketti '+esc(new Date(lastSyncAt).toLocaleString('fi-FI'))+'.':''}</p>
+  <div class="btn-row mt">${deviceCredential?btn('remote-unpair','Poista laitteen paritus'):btn('remote-pair','Parita tämä laite automaattiseen synkronointiin','primary')}</div>
+  <p class="soft mt" id="sync-message">${esc(syncMessage)}</p>
+  <p class="micro mt">Garmin-avaimet, Oura Client Secret ja OAuth-tokenit pysyvät Cloudflaressa. ADMIN_TOKEN on vain istuntomuistissa; laitteen paritus tallentaa selaimen IndexedDB:hen ei-vietävän allekirjoitusavaimen. Harjoituskirjaukset pysyvät paikallisessa selaimessa eivätkä synkronoidu laitteiden välillä.</p>
+</section>
+ <div class="title-row"><h2>Backup & data portability</h2></div><section class="card"><p class="soft">Tiedot säilyvät tällä laitteella selaimen tallennustilassa. Ne eivät synkronoidu iPhonen, iPadin ja Macin välillä. Vie varmuuskopio ennen sovelluksen uudelleenasennusta tai Pages-sivun muutosta. Garmin/Oura-tuonti hyväksyy vain rajapintojen JSON-tietoja, ei FIT-tiedostoja.</p><div class="btn-row mt">${btn('export', 'Vie JSON', 'primary')}${btn('export-csv', 'Vie CSV')}${btn('import', 'Tuo JSON')}${btn('import-garmin', 'Tuo Garmin JSON')}${btn('import-oura', 'Tuo Oura JSON')}</div><input type="file" id="backup-file" accept=".json,application/json" hidden><input type="file" id="garmin-file" accept=".json,application/json" hidden><input type="file" id="oura-file" accept=".json,application/json" hidden><div class="divider"></div><div class="status">Uusi aloitus: vanhaa harjoitushistoriaa ei tuoda automaattisesti. Voit viedä uuden harjoitushistorian JSON-muodossa.</div><div class="btn-row mt">${btn('export', 'Vie uusi varmuuskopio')}${btn('reset', 'Nollaa 6.0 -tiedot', 'danger')}</div></section>
+ <p class="micro mt">Ultra Performance 6.2 · Offline-first PWA · 75 % matte black / 20 % gunmetal / 5 % deep green. Ei pilvitallennusta tai automaattisia lääketieteellisiä tulkintoja.</p>`;
+}
+function modalView() {
+    if (!activeModal)
+        return '';
+    if (activeModal === 'activity')
+        return `<div class="modal-backdrop"><section class="card modal" role="dialog" aria-modal="true" aria-label="Kirjaa aktiviteetti"><div class="row between"><h2>Kirjaa aktiviteetti</h2><button class="btn sm ghost" data-action="close">Sulje ✕</button></div><p class="soft mt">Smart Check-in: kesto, koettu rasitus ja tarvittaessa jalkojen kuormitus.</p><form id="activity-form"><div class="split mt"><div class="field"><label>Laji</label><select name="sport">${Object.entries(ACTIVITIES).filter(([k]) => k !== 'strength').map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></div><div class="field"><label>Päivä</label><input name="date" type="date" required value="${today()}"></div></div><div class="split"><div class="field"><label>Kesto · min</label><input name="duration" type="number" min="1" max="2000" required value="60"></div><div class="field"><label>Matka · km (valinnainen)</label><input name="distance" inputmode="decimal" type="number" min="0" step="0.1" value="0"></div></div><div class="split"><div class="field"><label>Nousumetrit</label><input name="ascent" inputmode="numeric" type="number" min="0" value="0"></div><div class="field"><label>Keskisyke (valinnainen)</label><input name="hr" inputmode="numeric" type="number" min="0" max="220" value="0"></div></div><div class="split"><div class="field"><label>Session RPE · 1–10</label><select name="rpe">${Array.from({ length: 10 }, (_, i) => i + 1).map(n => `<option value="${n}" ${n === 6 ? 'selected' : ''}>${n}/10</option>`).join('')}</select></div><div class="field"><label>Jalkojen kuormitus · 0–3</label><select name="legs"><option value="0">0 · Ei</option><option value="1" selected>1 · Kevyt</option><option value="2">2 · Kohtalainen</option><option value="3">3 · Voimakas</option></select></div></div><div class="field"><label>Huomio (valinnainen)</label><textarea name="notes" maxlength="500" placeholder="Esim. mäkinen polku, nopeat suunnanmuutokset..."></textarea></div><button type="submit" class="btn primary block">Tallenna aktiviteetti</button></form></section></div>`;
+    if (activeModal === 'recovery') {
+        const rec = getRecovery(state, today());
+        return `<div class="modal-backdrop"><section class="card modal" role="dialog" aria-modal="true" aria-label="Palautumisen check-in"><div class="row between"><h2>Daily recovery check-in</h2><button class="btn sm ghost" data-action="close">Sulje ✕</button></div><p class="soft mt">Oma arvio täydentää mahdollisia laitemittauksia. Tietoja ei lähetetä palvelimelle.</p><form id="recovery-form"><div class="split"><div class="field"><label>Vire · 1–5</label><select name="energy">${[1, 2, 3, 4, 5].map(n => `<option value="${n}" ${(rec?.energy || 3) === n ? 'selected' : ''}>${n} / 5</option>`).join('')}</select></div><div class="field"><label>Jalat · 0–3</label><select name="legs">${[0, 1, 2, 3].map(n => `<option value="${n}" ${(rec?.legs || 0) === n ? 'selected' : ''}>${n} / 3</option>`).join('')}</select></div></div><div class="field"><label>Kipu tai sairausoireita tänään?</label><select name="pain"><option value="0" ${!rec?.pain ? 'selected' : ''}>Ei</option><option value="1" ${rec?.pain ? 'selected' : ''}>Kyllä — arvioi kuormitus erikseen</option></select></div><div class="split"><div class="field"><label>Unen kesto · h</label><input name="sleep" type="number" min="0" max="16" step="0.1" value="${rec?.sleepHours ?? ''}" placeholder="7.5"></div><div class="field"><label>Oura HRV · ms (valinnainen)</label><input name="hrv" type="number" min="0" max="350" value="${rec?.hrv ?? ''}" placeholder="—"></div></div><div class="split"><div class="field"><label>Leposyke (valinnainen)</label><input name="restHr" type="number" min="25" max="150" value="${rec?.restHr ?? ''}" placeholder="—"></div><div class="field"><label>Oura Readiness (valinnainen)</label><input name="readiness" type="number" min="0" max="100" value="${rec?.readiness ?? ''}" placeholder="—"></div></div><button type="submit" class="btn primary block mt">Tallenna check-in</button></form></section></div>`;
+    }
+    if (activeModal === 'finish')
+        return `<div class="modal-backdrop"><section class="card modal" role="dialog" aria-modal="true" aria-label="Lopeta harjoitus"><div class="row between"><h2>Session complete</h2><button class="btn sm ghost" data-action="close">Jatka treeniä ✕</button></div><p class="soft mt">Kirjaa lyhyt Smart Check-in, jotta Adaptive Coach voi huomioida harjoituksen.</p><form id="finish-form"><div class="split"><div class="field"><label>Session RPE · 1–10</label><select name="rpe">${Array.from({ length: 10 }, (_, i) => i + 1).map(n => `<option value="${n}" ${n === 7 ? 'selected' : ''}>${n}/10</option>`).join('')}</select></div><div class="field"><label>Jalkakuormitus · 0–3</label><select name="legs"><option value="0">Ei</option><option value="1" selected>Kevyt</option><option value="2">Kohtalainen</option><option value="3">Voimakas</option></select></div></div>${state.active?.session.sport !== 'strength' ? `<div class="split"><div class="field"><label>Matka · km</label><input type="number" name="distance" min="0" step="0.1" placeholder="0"></div><div class="field"><label>Nousumetrit</label><input type="number" name="ascent" min="0" step="1" placeholder="0"></div></div><div class="field"><label>Keskisyke</label><input name="avgHr" type="number" min="0" max="220" placeholder="valinnainen"></div>` : ''}<div class="field"><label>Huomio</label><textarea maxlength="500" name="notes" placeholder="Treenin tuntuma, tekniikka, olosuhteet..."></textarea></div><button class="btn primary block" type="submit">Vahvista ja tallenna</button></form></section></div>`;
+    if (activeModal === 'activityFeedback') {
+        const a = state.activities.find(x => x.id === feedbackActivityId);
+        if (!a)
+            return '';
+        return `<div class="modal-backdrop"><section class="card modal" role="dialog" aria-modal="true"><div class="row between"><h2>Smart Check-in</h2><button class="btn sm ghost" data-action="close">Sulje ✕</button></div><p class="soft mt">${esc(a.title)} · ${fiDate(a.date)}. Laitedatasta ei voi päätellä luotettavasti jalkojen kuormituksen tunnetta.</p><form id="feedback-form"><div class="split"><div class="field"><label>Session RPE</label><select name="rpe">${Array.from({ length: 10 }, (_, i) => i + 1).map(n => `<option value="${n}" ${n === 6 ? 'selected' : ''}>${n}/10</option>`).join('')}</select></div><div class="field"><label>Jalkojen rasitus</label><select name="legs"><option value="0">Ei</option><option value="1">Kevyt</option><option value="2">Kohtalainen</option><option value="3">Voimakas</option></select></div></div><button class="btn primary block" type="submit">Tallenna palaute</button></form></section></div>`;
+    }
+    const p = state.plan.find(x => x.id === editPlanId);
+    if (!p)
+        return '';
+    return `<div class="modal-backdrop"><section class="card modal" role="dialog" aria-modal="true" aria-label="Muokkaa suunnitelmaa"><div class="row between"><h2>Muokkaa harjoitusta</h2><button class="btn sm ghost" data-action="close">Sulje ✕</button></div><form id="plan-form"><div class="field"><label>Harjoitus</label><select name="kind">${Object.entries(TEMPLATES).map(([k, t]) => `<option value="${k}" ${p.kind === k ? 'selected' : ''}>${esc(t.title)} · ${ACTIVITIES[t.sport]}</option>`).join('')}</select></div><div class="split"><div class="field"><label>Päivä</label><input type="date" name="date" value="${p.date}" required></div><div class="field"><label>Aika · min</label><input type="number" name="duration" min="20" max="240" value="${p.duration}" required></div></div><p class="soft">Harjoittelulajin vaihtaminen vaatii aina erillisen vahvistuksen. Lukitun harjoituksen saa muuttaa vain itse.</p><button class="btn primary block mt" type="submit">Tallenna muutos</button></form></section></div>`;
+}
+function render() { const body = tab === 'today' ? todayView() : tab === 'plan' ? planView() : tab === 'train' ? trainView() : tab === 'analyze' ? analyzeView() : settingsView(); el().innerHTML = header() + `<main>${body}</main>` + nav() + modalView(); updateTimer(); }
+function changeTab(target) { if (!['today', 'plan', 'train', 'analyze', 'settings'].includes(target))
+    return; tab = target; activeModal = ''; window.scrollTo({ top: 0, behavior: 'auto' }); render(); }
+function notify(msg) { flash(msg); }
+function openModal(s) { activeModal = s; render(); }
+function start(kind, minutes, planId) { try {
+    startSession(state, kind, minutes, planId);
+    tab = 'train';
+    activeModal = '';
+    commit();
+    window.scrollTo(0, 0);
+}
+catch (e) {
+    alert(e.message);
+} }
+function updateTimer() { const d = state.active; if (!d)
+    return; const seconds = Math.max(0, Math.floor((Date.now() - Date.parse(d.startedAt)) / 1000)); const e = document.getElementById('elapsed'); if (e)
+    e.textContent = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`; const rest = document.getElementById('rest'); if (rest) {
+    const x = Math.max(0, Math.ceil((restUntil - Date.now()) / 1000));
+    rest.textContent = x ? `${Math.floor(x / 60)}:${String(x % 60).padStart(2, '0')}` : '—';
+} }
+setInterval(updateTimer, 1000);
+function confirmRebuild() {
+    const start = planWeek, end = addDays(start, 6);
+    const done = state.plan.some(p => p.date >= start && p.date <= end && p.status === 'done');
+    if (!confirm(done ? 'Viikon ohjelma luodaan uudelleen. Valmiit harjoitukset säilyvät, mutta keskeneräiset poistuvat. Jatketaanko?' : 'Korvataanko tämän viikon keskeneräiset harjoitukset uudella suunnitelmalla?'))
+        return;
+    const old = state.plan.filter(p => p.date >= start && p.date <= end && p.status === 'done');
+    state.plan = state.plan.filter(p => p.date < start || p.date > end);
+    makeWeek(state, start);
+    for (const o of old) {
+        const matched = state.plan.find(p => p.date === o.date && p.kind === o.kind && p.status === 'planned');
+        if (matched)
+            matched.status = 'done';
+        else
+            state.plan.push(o);
+    }
+    logAction('Viikkosuunnitelma muodostettu uudelleen', 'Käyttäjän hyväksymä muutos');
+    commit();
+}
+function formData(form) { return new FormData(form); }
+function parseOptional(form, key) { const raw = String(form.get(key) || '').trim(); return raw === '' ? undefined : num(raw); }
+function importExternalFile(file, kind) { if (file.size > 12 * 1024 * 1024) {
+    alert('Tiedosto liian suuri');
+    return;
+} file.text().then(contents => { try {
+    const obj = JSON.parse(contents);
+    const result = kind === 'garmin' ? importGarminJSON(state, obj) : importOuraJSON(state, obj);
+    commit();
+    notify(kind === 'garmin' ? `Garmin: ${'added' in result ? result.added : 0} aktiviteettia tuotu` : `Oura: ${result.added} mittausta tuotu`);
+}
+catch (e) {
+    alert('Tuonti epäonnistui: ' + e.message);
+} }); }
+function importFile(file) { if (file.size > 12 * 1024 * 1024) {
+    alert('Tiedosto on liian suuri (enintään 12 MB).');
+    return;
+} file.text().then(text => { try {
+    const raw = JSON.parse(text);
+    if (raw?.version === 6 && !confirm('Korvataanko tämän sovelluksen nykyiset tiedot varmuuskopiolla?'))
+        return;
+    const result = importBackup(state, raw);
+    state = result.state;
+    commit();
+    flash(result.message);
+}
+catch (e) {
+    alert('Tuonti epäonnistui: ' + e.message);
+} }); }
+window.addEventListener('click', (evt) => {
+    const b = evt.target.closest('[data-action]');
+    if (!b)
+        return;
+    const action = b.dataset.action || '';
+    const id = b.dataset.id || '';
+    const value = b.dataset.value || '';
+    if (action === 'tab')
+        return changeTab(b.dataset.tab || 'today');
+    if (action === 'recovery')
+        return openModal('recovery');
+    if (action === 'activity')
+        return openModal('activity');
+    if (action === 'close') {
+        activeModal = '';
+        return render();
+    }
+    if (action === 'minutes') {
+        selectedMinutes = num(b.dataset.minutes, 45);
+        return render();
+    }
+    if (action === 'choose-kind') {
+        selectedKind = b.dataset.kind || 'gym-full-a';
+        return render();
+    }
+    if (action === 'start-selected')
+        return start(selectedKind, selectedMinutes);
+    if (action === 'start-plan') {
+        const p = state.plan.find(x => x.id === id);
+        if (p)
+            return start(p.kind, p.duration, p.id);
+    }
+    if (action === 'finish-modal')
+        return openModal('finish');
+    if (action === 'set-done') {
+        const s = state.active?.sets.find(x => x.id === id);
+        if (!s)
+            return;
+        s.done = !s.done;
+        if (s.done) {
+            const e = state.active?.session.exercises.find(x => x.id === s.exerciseId);
+            restUntil = Date.now() + ((e?.rest || 90) * 1000);
+        }
+        commit();
+        return;
+    }
+    if (action === 'rest-skip') {
+        restUntil = 0;
+        updateTimer();
+        return;
+    }
+    if (action === 'discard') {
+        if (confirm('Hylätäänkö keskeneräinen harjoitus?')) {
+            state.active = null;
+            commit();
+        }
+        return;
+    }
+    if (action === 'prev-week') {
+        planWeek = addDays(planWeek, -7);
+        return render();
+    }
+    if (action === 'next-week') {
+        planWeek = addDays(planWeek, 7);
+        makeWeek(state, planWeek);
+        commit();
+        return;
+    }
+    if (action === 'capacity') {
+        state.profile.capacity = value;
+        commit();
+        notify('Kapasiteetti tallennettu. Luo viikko uudelleen ottaa sen käyttöön.');
+        return;
+    }
+    if (action === 'rebuild-plan')
+        return confirmRebuild();
+    if (action === 'lock-plan') {
+        const p = state.plan.find(p => p.id === id);
+        if (p) {
+            p.locked = !p.locked;
+            commit();
+        }
+        return;
+    }
+    if (action === 'edit-plan') {
+        editPlanId = id;
+        return openModal('planEdit');
+    }
+    if (action === 'skip-plan') {
+        const p = state.plan.find(p => p.id === id);
+        if (!p)
+            return;
+        if (confirm(`Ohitetaanko ${p.title}? Harjoitusvelkaa ei synny.`)) {
+            p.status = 'skipped';
+            logAction(`${p.title} ohitettu`, 'Käyttäjän päätös; ei takaisinmaksua');
+            commit();
+        }
+        return;
+    }
+    if (action === 'delete-activity') {
+        if (!confirm('Poistetaanko tämä harjoitus pysyvästi?'))
+            return;
+        state.activities = state.activities.filter(a => a.id !== id);
+        commit();
+        return;
+    }
+    if (action === 'split') {
+        state.profile.split = value;
+        commit();
+        notify('Jako tallennettu tuleville viikoille');
+        return;
+    }
+    if (action === 'export') {
+        download(`ultra-performance-backup-${filenameDate()}.json`, JSON.stringify(state, null, 2));
+        notify('Varmuuskopio ladattu');
+        return;
+    }
+    if (action === 'export-csv') {
+        download(`ultra-performance-${filenameDate()}.csv`, csvExport(state), 'text/csv;charset=utf-8');
+        return;
+    }
+    if (action === 'import') {
+        document.querySelector('#backup-file')?.click();
+        return;
+    }
+    if (action === 'remote-save') {
+        try{
+            storeRemoteInputs();
+            configuredRemote();
+            syncMessage='Yhteysasetukset tallennettu. Tunniste on käytettävissä tässä istunnossa. Kokeile Testaa yhteys.';
+            render();
+        }catch(e){alert('Virheellinen asetus: '+e.message);}
+        return;
+    }
+    if (action === 'remote-test') { void testRemote(); return; }
+    if (action === 'remote-pair') { void pairDevice(); return; }
+    if (action === 'remote-unpair') { void unpairDevice(); return; }
+    if (action === 'remote-sync') { void synchronizeRemote(); return; }
+    if (action === 'remote-oura') { void connectOura(); return; }
+    if (action === 'remote-disconnect') { void disconnectOura(); return; }
+    if (action === 'import-garmin') {
+        document.querySelector('#garmin-file')?.click();
+        return;
+    }
+    if (action === 'import-oura') {
+        document.querySelector('#oura-file')?.click();
+        return;
+    }
+    if (action === 'feedback-activity') {
+        feedbackActivityId = id;
+        return openModal('activityFeedback');
+    }
+    if (action === 'reset') {
+        if (!confirm('Aloitetaanko Ultra Performance 6.0 alusta? Kaikki tämän version harjoitustiedot poistetaan tältä laitteelta.'))
+            return;
+        state = initial();
+        makeWeek(state, today());
+        commit();
+        return;
+    }
+});
+window.addEventListener('change', evt => {
+    if(evt.target?.matches?.('[data-auto-sync]')){autoSyncEnabled=!!evt.target.checked;localStorage.setItem('up62-auto-sync',autoSyncEnabled?'on':'off');syncMessage=autoSyncEnabled?'Automaattinen synkronointi otettu käyttöön.':'Automaattinen synkronointi poistettu käytöstä.';render();if(autoSyncEnabled)void autoSyncIfDue(true);return;}
+    const target = evt.target;
+    if (target.matches('[data-setting]')) {
+        const name = target.dataset.setting;
+        if (name === 'capacity')
+            state.profile.capacity = target.value;
+        else if (name === 'autopilot')
+            state.profile.autopilot = target.checked;
+        else if (name === 'goalWeight' || name === 'kettlebellKg' || name === 'maxMinutes')
+            state.profile[name] = num(target.value);
+        commit(false);
+        notify('Asetus tallennettu');
+        return;
+    }
+    if (target.id === 'exercise-chart') {
+        chartExercise = target.value;
+        render();
+        return;
+    }
+    if (target.id === 'backup-file') {
+        const file = target.files?.[0];
+        if (file)
+            importFile(file);
+        return;
+    }
+    if (target.id === 'garmin-file' || target.id === 'oura-file') {
+        const file = target.files?.[0];
+        if (file)
+            importExternalFile(file, target.id === 'garmin-file' ? 'garmin' : 'oura');
+        return;
+    }
+    if (target.dataset.set && state.active) {
+        const s = state.active.sets.find(x => x.id === target.dataset.set);
+        if (s) {
+            const field = target.dataset.field;
+            const max = field === 'weight' ? 500 : field === 'reps' ? 50 : 6;
+            s[field] = clamp(num(target.value), 0, max);
+            commit(false);
+        }
+        return;
+    }
+});
+window.addEventListener('submit', evt => {
+    const form = evt.target;
+    if (!form?.id)
+        return;
+    evt.preventDefault();
+    const fd = formData(form);
+    try {
+        if (form.id === 'activity-form') {
+            const date = String(fd.get('date') || today()), sport = String(fd.get('sport')), duration = num(fd.get('duration'));
+            const rpe = num(fd.get('rpe')), legs = num(fd.get('legs'));
+            const title = ACTIVITIES[sport] || 'Muu liikunta';
+            addActivity(state, { source: 'manual', date, startedAt: `${date}T12:00:00`, sport, kind: 'unplanned', title, duration, distanceKm: num(fd.get('distance')), ascentM: num(fd.get('ascent')), avgHr: num(fd.get('hr')), sessionRpe: rpe, legStress: legs, notes: String(fd.get('notes') || '').slice(0, 500), sets: [] });
+            activeModal = '';
+            commit();
+            notify('Aktiviteetti tallennettu ja kuormitus huomioitu');
+            return;
+        }
+        if (form.id === 'recovery-form') {
+            const entry = { date: today(), energy: clamp(num(fd.get('energy'), 3), 1, 5), legs: clamp(num(fd.get('legs')), 0, 3), pain: String(fd.get('pain')) === '1' };
+            for (const [k, name] of [['sleep', 'sleepHours'], ['hrv', 'hrv'], ['restHr', 'restHr'], ['readiness', 'readiness']]) {
+                const n = parseOptional(fd, k);
+                if (n !== undefined)
+                    entry[name] = n;
+            }
+            recordRecovery(state, entry);
+            activeModal = '';
+            commit();
+            notify('Palautumisen check-in tallennettu');
+            return;
+        }
+        if (form.id === 'finish-form') {
+            const a = finishSession(state, { rpe: num(fd.get('rpe'), 7), legs: num(fd.get('legs')), distance: parseOptional(fd, 'distance'), ascent: parseOptional(fd, 'ascent'), avgHr: parseOptional(fd, 'avgHr'), notes: String(fd.get('notes') || '').slice(0, 500) });
+            activeModal = '';
+            tab = 'today';
+            commit();
+            notify(`${a.title} tallennettu`);
+            return;
+        }
+        if (form.id === 'feedback-form') {
+            const a = state.activities.find(x => x.id === feedbackActivityId);
+            if (!a)
+                throw Error('Harjoitusta ei löytynyt');
+            a.sessionRpe = clamp(num(fd.get('rpe'), 6), 1, 10);
+            a.legStress = clamp(num(fd.get('legs')), 0, 3);
+            activeModal = '';
+            commit();
+            notify('Smart Check-in tallennettu');
+            return;
+        }
+        if (form.id === 'plan-form') {
+            const p = state.plan.find(p => p.id === editPlanId);
+            if (!p)
+                throw Error('Harjoitusta ei löytynyt');
+            const kind = String(fd.get('kind')), newType = TEMPLATES[kind];
+            if (!newType)
+                throw Error('Tuntematon harjoitus');
+            const changed = p.sport !== newType.sport;
+            if (changed && !confirm(`Vahvistatko harjoittelulajin vaihdon (${ACTIVITIES[p.sport]} → ${ACTIVITIES[newType.sport]})?`))
+                return;
+            swapPlan(state, p.id, kind, changed);
+            p.date = String(fd.get('date'));
+            p.duration = clamp(num(fd.get('duration'), 45), 20, 240);
+            p.locked = false;
+            activeModal = '';
+            commit();
+            notify('Suunnitelma päivitetty');
+            return;
+        }
+    }
+    catch (e) {
+        alert(e.message);
+    }
+});
+if('serviceWorker' in navigator&&location.protocol==='https:'){
+    window.addEventListener('load',async()=>{
+      try{
+        const reg=await navigator.serviceWorker.register('./sw.js');
+        if(reg.waiting)syncMessage='Sovelluspäivitys saatavilla: päivitä sivu, kun et ole kesken harjoituksen.';
+        reg.addEventListener('updatefound',()=>{
+          const worker=reg.installing;
+          worker?.addEventListener('statechange',()=>{if(worker.state==='installed'&&navigator.serviceWorker.controller){syncMessage='Uusi sovellusversio saatavilla. Päivitä sivu, kun harjoitus on valmis.';if(tab==='settings')render()}});
+        });
+        setInterval(()=>{if(document.visibilityState==='visible')void reg.update().catch(()=>{})},60*60e3);
+      }catch(e){console.info('Offline-välimuisti ei käynnistynyt',e)}
+    });
+}
+window.addEventListener('pageshow',()=>{setTimeout(()=>void autoSyncIfDue(),1500)});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')void autoSyncIfDue()});
+window.addEventListener('online',()=>{void autoSyncIfDue(true)});
+setInterval(()=>void autoSyncIfDue(),30*60e3);
+render();
+void deviceReadyPromise.then(()=>{if(tab==='settings')render();void autoSyncIfDue(true)});
+if(new URLSearchParams(location.search).has('oura')){
+  const status=new URLSearchParams(location.search).get('oura');
+  tab='settings';syncMessage=status==='connected'?'Oura valtuutettu! Anna Worker Access Token ja testaa yhteys.':'Oura-yhteyttä ei hyväksytty.';
+  history.replaceState(null,'',location.pathname);render();
+}
+
+</script>
+</body>
+</html>
