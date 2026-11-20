@@ -69,6 +69,7 @@
 .coach-manual-fields summary{cursor:pointer;color:#b6c8c1;font-size:13px}
 .coach-manual-fields .split{margin-top:12px}
 @media(max-width:430px){.coach-insight .row.between{align-items:flex-start;gap:9px;flex-wrap:wrap}}
+.save-warning{padding:12px 14px;margin:0 0 14px;border:1px solid #c88b58;border-radius:12px;background:#39251b;color:#ffe0c5;display:flex;flex-wrap:wrap;align-items:center;gap:8px}.save-warning .btn{width:auto}
 /* Stride brand assets are deliberately separate from the legacy data identity. */
 .brand-icon{background:transparent;border:0;border-radius:0;display:grid;place-items:center}
 .brand-icon img{width:39px;height:39px;display:block}
@@ -331,10 +332,10 @@ function generate(state, kind, minutes, plan) {
         if (raw.ballistic && leg.high)
             continue;
         const e = { ...raw, sets };
-        if (out.length >= 2 && estimate([...out, e], minutes, venue) > minutes)
-            break;
         if (out.length >= 2 && out.length >= (minutes <= 30 ? 4 : minutes <= 45 ? 5 : 7))
             break;
+        // Include the accessory candidate before evaluating the budget: a single
+        // set may fit even when its full prescribed volume does not.
         out.push(e);
     }
     // Protect the first two main lifts; trim accessory sets before deleting a movement.
@@ -1014,13 +1015,17 @@ async function disconnectOura(){
 }
 
 const logAction = (message, reason, type = 'user') => state.changes.unshift({ id: uid('log'), date: new Date().toISOString(), message, reason, type });
+let saveFailed = false;
 function commit(reRender = true) {
-  if (!save(state)) {
+  const previouslyFailed = saveFailed;
+  const saved = save(state);
+  saveFailed = !saved;
+  // Always refresh after a failed write. Otherwise the in-memory workout may
+  // differ from the visible sets, leaving the user unable to export it safely.
+  if (reRender || !saved || previouslyFailed) render();
+  if (!saved && !previouslyFailed)
     alert('Tallennus epäonnistui. Viimeisimmät muutokset ovat vain tämän istunnon muistissa. Älä sulje sovellusta; vie JSON-varmuuskopio nyt.');
-    return false;
-  }
-  if (reRender) render();
-  return true;
+  return saved;
 }
 function flash(msg) { const t = document.getElementById('toast'); if (!t)
     return; t.textContent = msg; t.hidden = false; setTimeout(() => { t.hidden = true; }, 3000); }
@@ -1261,7 +1266,7 @@ function modalView() {
         return '';
     return `<div class="modal-backdrop"><section class="card modal" role="dialog" aria-modal="true" aria-label="Muokkaa suunnitelmaa"><div class="row between"><h2>Muokkaa harjoitusta</h2><button class="btn sm ghost" data-action="close">Sulje ✕</button></div><form id="plan-form"><div class="field"><label>Harjoitus</label><select name="kind">${Object.entries(TEMPLATES).map(([k, t]) => `<option value="${k}" ${p.kind === k ? 'selected' : ''}>${esc(t.title)} · ${ACTIVITIES[t.sport]}</option>`).join('')}</select></div><div class="split"><div class="field"><label>Päivä</label><input type="date" name="date" value="${p.date}" required></div><div class="field"><label>Aika · min</label><input type="number" name="duration" min="20" max="240" value="${p.duration}" required></div></div><p class="soft">Harjoittelulajin vaihtaminen vaatii aina erillisen vahvistuksen. Lukitun harjoituksen saa muuttaa vain itse.</p><button class="btn primary block mt" type="submit">Tallenna muutos</button></form></section></div>`;
 }
-function render() { const body = tab === 'today' ? todayView() : tab === 'plan' ? planView() : tab === 'train' ? trainView() : tab === 'analyze' ? analyzeView() : settingsView(); el().innerHTML = header() + `<main>${body}</main>` + nav() + modalView(); updateTimer(); }
+function render() { const body = tab === 'today' ? todayView() : tab === 'plan' ? planView() : tab === 'train' ? trainView() : tab === 'analyze' ? analyzeView() : settingsView(); const warning = saveFailed ? `<section class="save-warning" role="alert"><strong>Tallennus epäonnistui.</strong> Viimeisimmät muutokset ovat vain tämän istunnon muistissa. Älä sulje sovellusta. <button class="btn sm" data-action="export">Vie JSON-varmuuskopio</button></section>` : ''; el().innerHTML = header() + warning + `<main>${body}</main>` + nav() + modalView(); updateTimer(); }
 function changeTab(target) { if (!['today', 'plan', 'train', 'analyze', 'settings'].includes(target))
     return; tab = target; activeModal = ''; window.scrollTo({ top: 0, behavior: 'auto' }); render(); }
 function notify(msg) { flash(msg); }

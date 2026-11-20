@@ -2,66 +2,66 @@ TAP version 13
 # Subtest: BR01: PWA technical identity remains unchanged
 ok 1 - BR01: PWA technical identity remains unchanged
   ---
-  duration_ms: 1.176949
+  duration_ms: 1.193823
   type: 'test'
   ...
 # Subtest: BR02: visible brand name, About attribution and iOS title are Stride
 ok 2 - BR02: visible brand name, About attribution and iOS title are Stride
   ---
-  duration_ms: 0.20621
+  duration_ms: 0.233391
   type: 'test'
   ...
 # Subtest: BR03: Apple icon and PWA icons reference original supplied asset names
 ok 3 - BR03: Apple icon and PWA icons reference original supplied asset names
   ---
-  duration_ms: 1.239132
+  duration_ms: 1.556368
   type: 'test'
   ...
 # Subtest: BR04: legacy migration and old saved labels stay compatible
 ok 4 - BR04: legacy migration and old saved labels stay compatible
   ---
-  duration_ms: 0.357428
+  duration_ms: 0.497959
   type: 'test'
   ...
 # Subtest: BR05: SW pre-caches the new branding assets
 ok 5 - BR05: SW pre-caches the new branding assets
   ---
-  duration_ms: 0.23917
+  duration_ms: 0.261633
   type: 'test'
   ...
 # Subtest: BR06: SW activation deletes only this app’s previous cache, not other apps
 ok 6 - BR06: SW activation deletes only this app’s previous cache, not other apps
   ---
-  duration_ms: 2.580688
+  duration_ms: 3.352236
   type: 'test'
   ...
 # Subtest: BR07: offline navigation uses cached HTML, but missing icons do not
 ok 7 - BR07: offline navigation uses cached HTML, but missing icons do not
   ---
-  duration_ms: 1.558242
+  duration_ms: 1.941206
   type: 'test'
   ...
 # Subtest: BR08: SW ignores requests outside /Gym/ and non-GET requests
 ok 8 - BR08: SW ignores requests outside /Gym/ and non-GET requests
   ---
-  duration_ms: 0.903217
+  duration_ms: 1.323189
   type: 'test'
   ...
 # Paikallinen tila ei auennut SyntaxError: Expected property name or '}' in JSON at position 1 (line 1 column 2)
 #     at JSON.parse (<anonymous>)
 #     at Object.load (evalmachine.<anonymous>:396:28)
-#     at /mnt/data/stride-6.5-review/tests/engine.test.cjs:26:27
+#     at /mnt/data/stride-review-work/tests/engine.test.cjs:26:27
 #     at getActual (node:assert:531:5)
 #     at Function.throws (node:assert:677:24)
-#     at TestContext.<anonymous> (/mnt/data/stride-6.5-review/tests/engine.test.cjs:26:10)
+#     at TestContext.<anonymous> (/mnt/data/stride-review-work/tests/engine.test.cjs:26:10)
 #     at Test.runInAsyncScope (node:async_hooks:214:14)
 #     at Test.run (node:internal/test_runner/test:1047:25)
 #     at Test.start (node:internal/test_runner/test:944:17)
 #     at startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
 # Tallennus epäonnistui Error: QuotaExceededError
-#     at localStorage.setItem (/mnt/data/stride-6.5-review/tests/engine.test.cjs:41:35)
+#     at localStorage.setItem (/mnt/data/stride-review-work/tests/engine.test.cjs:41:35)
 #     at Object.save (evalmachine.<anonymous>:413:18)
-#     at TestContext.<anonymous> (/mnt/data/stride-6.5-review/tests/engine.test.cjs:42:26)
+#     at TestContext.<anonymous> (/mnt/data/stride-review-work/tests/engine.test.cjs:42:26)
 #     at Test.runInAsyncScope (node:async_hooks:214:14)
 #     at Test.run (node:internal/test_runner/test:1047:25)
 #     at Test.processPendingSubtests (node:internal/test_runner/test:744:18)
@@ -71,87 +71,105 @@ ok 8 - BR08: SW ignores requests outside /Gym/ and non-GET requests
 # Subtest: T04: invalid saved state fails closed, never overwrites it
 ok 9 - T04: invalid saved state fails closed, never overwrites it
   ---
-  duration_ms: 3.138527
+  duration_ms: 2.760528
   type: 'test'
   ...
 # Subtest: T01: version 6 state survives save/load roundtrip
 ok 10 - T01: version 6 state survives save/load roundtrip
   ---
-  duration_ms: 0.390988
+  duration_ms: 0.355684
   type: 'test'
   ...
 # Subtest: T02: active draft survives save/load
 ok 11 - T02: active draft survives save/load
   ---
-  duration_ms: 0.237136
+  duration_ms: 0.25951
   type: 'test'
   ...
 # Subtest: T03: save failure returns false
 ok 12 - T03: save failure returns false
   ---
-  duration_ms: 0.456456
+  duration_ms: 0.546751
   type: 'test'
   ...
 # Subtest: T06: completed top-range sets trigger progression
 ok 13 - T06: completed top-range sets trigger progression
   ---
-  duration_ms: 0.449215
+  duration_ms: 0.470397
   type: 'test'
   ...
 # Subtest: T07: incomplete repetition range does not increase weight
 ok 14 - T07: incomplete repetition range does not increase weight
   ---
-  duration_ms: 0.262515
+  duration_ms: 0.307882
   type: 'test'
   ...
 # Subtest: T08: uncompleted sets do not affect progression
 ok 15 - T08: uncompleted sets do not affect progression
   ---
-  duration_ms: 0.297477
+  duration_ms: 0.29274
   type: 'test'
   ...
 # Subtest: T09: mixed weights must not trigger load increase
 ok 16 - T09: mixed weights must not trigger load increase
   ---
-  duration_ms: 0.327633
+  duration_ms: 0.325569
   type: 'test'
   ...
 # Subtest: T10: new exercise must not invent starting weight
 ok 17 - T10: new exercise must not invent starting weight
   ---
-  duration_ms: 0.421324
+  duration_ms: 0.424048
   type: 'test'
   ...
 # Subtest: T11: proposed weights never enter history before completed sets
 ok 18 - T11: proposed weights never enter history before completed sets
   ---
-  duration_ms: 0.496045
+  duration_ms: 0.528424
   type: 'test'
   ...
 # Subtest: T15: finishing only persists completed work sets
 ok 19 - T15: finishing only persists completed work sets
   ---
-  duration_ms: 0.835025
+  duration_ms: 0.908345
   type: 'test'
   ...
 # Subtest: T19: locked plan is not automatically reduced
 ok 20 - T19: locked plan is not automatically reduced
   ---
-  duration_ms: 1.09786
+  duration_ms: 1.006001
   type: 'test'
   ...
 # Subtest: T16/T17/T18: time budgets produce nonempty workouts with main lifts
 ok 21 - T16/T17/T18: time budgets produce nonempty workouts with main lifts
   ---
-  duration_ms: 0.582626
+  duration_ms: 0.393331
   type: 'test'
   ...
-1..21
-# tests 21
+# Subtest: P0: failed save refreshes visible state and keeps persistent backup warning
+ok 22 - P0: failed save refreshes visible state and keeps persistent backup warning
+  ---
+  duration_ms: 2.780477
+  type: 'test'
+  ...
+# Subtest: P1: time budget reduces accessory sets before dropping the exercise
+ok 23 - P1: time budget reduces accessory sets before dropping the exercise
+  ---
+  duration_ms: 10.378553
+  type: 'test'
+  ...
+# Subtest: P1: every strength template stays within 20–60 minute budgets
+ok 24 - P1: every strength template stays within 20–60 minute budgets
+  ---
+  duration_ms: 10.295798
+  type: 'test'
+  ...
+1..24
+# tests 24
 # suites 0
-# pass 21
+# pass 24
 # fail 0
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 82.502153
+# duration_ms 106.753115

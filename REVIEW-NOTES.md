@@ -10,6 +10,11 @@
 ## Not modified
 - `main` branch on GitHub, production Pages, `/Gym/` path, manifest `id/start_url/scope`, schema version 6, localStorage/IndexedDB/sessionStorage keys, Cloudflare Worker, OAuth configuration, user workout data.
 
+## Post-bundle review fixes
+- P0: on a failed localStorage write, force the UI to re-render from the in-memory state, display a persistent warning with a JSON export action, and clear the warning after a successful retry.
+- P1: add an accessory candidate before trimming its sets to the available time budget; preserve the two main lifts.
+- Added three regression tests covering failed writes, a 24-minute one-set accessory case, and all strength templates across 20–60 minute budgets.
+
 ## Automated test status
 - Node test suite: see `test-results.txt` in this package.
 - Browser/device acceptance: NOT RUN.
