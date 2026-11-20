@@ -4,13 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b0d0f">
-  <meta name="description" content="Ultra Performance — mukautuva hybridi­harjoittelun suunnittelu ja harjoituspäiväkirja.">
+  <meta name="description" content="Stride — mukautuva hybridiharjoittelun suunnittelu ja harjoituspäiväkirja.">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Ultra Performance">
+  <meta name="apple-mobile-web-app-title" content="Stride">
   <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" href="icon-192.png" type="image/png">
-  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" href="icon-32.png" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="icon-180.png" sizes="180x180">
   <style>
 :root{color-scheme:dark;--bg:#0b0d0f;--panel:#171b1e;--panel2:#20262a;--line:#30383b;--muted:#919ea3;--text:#f3f5f5;--green:#259368;--green2:#b0e0c7;--danger:#e3918c;--blue:#92aab8}
 *{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}h1,h2,h3,p{margin:0}h1{font-size:31px;line-height:1.06;letter-spacing:-1.3px;font-weight:780}h2{font-size:18px;letter-spacing:-.35px}h3{font-size:15px}small,.muted{color:var(--muted)}a{color:var(--green2)}input,select,textarea{max-width:100%;background:#12171a;border:1px solid #394347;border-radius:9px;color:var(--text);padding:11px;width:100%;outline:0}input:focus,select:focus,textarea:focus{border-color:#56aa83}input[type=checkbox]{width:auto;accent-color:var(--green)}input[type=range]{accent-color:var(--green);padding:3px}input[type=date]{color-scheme:dark}textarea{min-height:70px;resize:vertical}label{font-size:11px;color:#a9b5b8;font-weight:700;display:block;margin-bottom:5px;letter-spacing:.2px}fieldset{border:0;padding:0;margin:0}
@@ -69,8 +69,11 @@
 .coach-manual-fields summary{cursor:pointer;color:#b6c8c1;font-size:13px}
 .coach-manual-fields .split{margin-top:12px}
 @media(max-width:430px){.coach-insight .row.between{align-items:flex-start;gap:9px;flex-wrap:wrap}}
+/* Stride brand assets are deliberately separate from the legacy data identity. */
+.brand-icon{background:transparent;border:0;border-radius:0;display:grid;place-items:center}
+.brand-icon img{width:39px;height:39px;display:block}
 </style>
-  <title>Ultra Performance 6.4.0 — Adaptive Coach</title>
+  <title>Stride 6.5.0 — Adaptive Coach</title>
 </head>
 <body>
  <div id="app" aria-live="polite"></div>
@@ -273,17 +276,25 @@ function recoveryAdvice(state, date = today()) {
     const evidence=coachEvidence(state,date);
     return {reduce:evidence.reduce, reasons:evidence.reasons, level:evidence.level, evidence};
 }
-function lastSets(state, id) { return [...state.activities].sort((a, b) => b.startedAt.localeCompare(a.startedAt)).map(a => a.sets.filter(s => s.exerciseId === id && s.done)).find(s => s.length > 0) || []; }
+function lastSets(state, id) {
+  return [...state.activities].filter(a => a.sport === 'strength')
+    .sort((a, b) => String(b.startedAt).localeCompare(String(a.startedAt)))
+    .map(a => (Array.isArray(a.sets) ? a.sets : []).filter(s => s.exerciseId === id && s.done === true && Number(s.reps) >= 1))
+    .find(sets => sets.length > 0) || [];
+}
 function progression(state, e) {
     if (e.venue === 'home')
         return { weight: e.bodyweight ? 0 : state.profile.kettlebellKg, reason: 'Kotona: etene toistoissa tai liikevariantissa, älä kuvitellulla painonkorotuksella.', increase: false };
     const prev = lastSets(state, e.id);
     if (!prev.length)
         return { weight: null, reason: 'Valitse ensimmäinen työpaino tavoite-RIR:n mukaan.', increase: false };
-    const kg = prev[0].weight;
-    const comparable = prev.every(s => Math.abs(s.weight - kg) < .01);
-    if (comparable && prev.length >= 2 && prev.every(s => s.reps >= e.max && s.rir >= 1))
-        return { weight: Number((kg + e.increment).toFixed(2)), reason: `Edelliset sarjat toistoalueen yläpäässä. Ehdotus +${e.increment} kg.`, increase: true };
+    const kg = Number(prev[0].weight);
+    if (!Number.isFinite(kg) || kg <= 0)
+        return { weight: null, reason: 'Edellisen työpainon tiedot puuttuvat. Valitse paino itse.', increase: false };
+    const increment = Number(e.increment);
+    const comparable = prev.every(s => Number.isFinite(Number(s.weight)) && Math.abs(Number(s.weight) - kg) < .01);
+    if (comparable && prev.length >= 2 && Number.isFinite(increment) && increment > 0 && prev.every(s => Number(s.reps) >= e.max && Number(s.rir) >= 1))
+        return { weight: Number((kg + increment).toFixed(2)), reason: `Edelliset sarjat toistoalueen yläpäässä. Ehdotus +${increment} kg.`, increase: true };
     if (prev.some(s => s.reps < e.min && s.rir === 0))
         return { weight: kg, reason: 'Edellisessä treenissä alaraja alittui failurella. Pidä tai kevennä kuormaa.', increase: false };
     return { weight: kg, reason: `Edellinen toteuma ${prev.map(s => s.reps).join(' / ')}. Pyri lisäämään toistoja.`, increase: false };
@@ -326,8 +337,12 @@ function generate(state, kind, minutes, plan) {
             break;
         out.push(e);
     }
-    while (out.length > 2 && estimate(out, minutes, venue) > minutes)
-        out.pop();
+    // Protect the first two main lifts; trim accessory sets before deleting a movement.
+    while (out.length > 2 && estimate(out, minutes, venue) > minutes) {
+      const accessory = out.slice(2).findLastIndex(e => e.sets > 1);
+      if (accessory >= 0) out[accessory + 2].sets--;
+      else out.pop();
+    }
     const estimatedMinutes = estimate(out, minutes, venue);
     return { title: template.title, kind, sport: 'strength', venue, timeBudget: minutes, estimatedMinutes, warmupMinutes: minutes <= 30 ? 5 : 8, exercises: out, segments: [], reason: reduce ? `Alavartolon volyymia kevennettiin: ${advice.reasons.join('; ') || leg.reason}. Pääliikkeiden tekniikka ja palautukset säilyvät.` : `Liikkeet valittiin ${template.focus.toLowerCase()} -tavoitteeseen. Ei supersettejä.`, rirTarget: reduce ? 3 : 2, reduced: reduce };
 }
@@ -999,15 +1014,20 @@ async function disconnectOura(){
 }
 
 const logAction = (message, reason, type = 'user') => state.changes.unshift({ id: uid('log'), date: new Date().toISOString(), message, reason, type });
-function commit(reRender = true) { if (!save(state))
-    alert('Tallennustila ei ole käytettävissä. Vie nykyiset tiedot varmuuskopioksi.'); if (reRender)
-    render(); }
+function commit(reRender = true) {
+  if (!save(state)) {
+    alert('Tallennus epäonnistui. Viimeisimmät muutokset ovat vain tämän istunnon muistissa. Älä sulje sovellusta; vie JSON-varmuuskopio nyt.');
+    return false;
+  }
+  if (reRender) render();
+  return true;
+}
 function flash(msg) { const t = document.getElementById('toast'); if (!t)
     return; t.textContent = msg; t.hidden = false; setTimeout(() => { t.hidden = true; }, 3000); }
 const dayName = (day) => new Date(`${day}T12:00:00`).toLocaleDateString('fi-FI', { weekday: 'short' }).replace('.', '').toUpperCase();
 const dayNum = (day) => day.slice(8);
 function nav() { const items = [['today', '⌁', 'Today'], ['plan', '▦', 'Plan'], ['train', '✚', 'Train'], ['analyze', '▥', 'Analyze'], ['settings', '⚙', 'Settings']]; return `<nav class="nav" aria-label="Päävalikko"><div class="nav-inner">${items.map(([k, icon, label]) => `<button data-action="tab" data-tab="${k}" class="${tab === k ? 'active' : ''}" aria-current="${tab === k ? 'page' : 'false'}"><span class="symbol">${icon}</span><span>${label}</span></button>`).join('')}</div></nav>`; }
-function header() { return `<header class="top"><div class="brand"><div class="brand-icon">UP</div><div><strong>ULTRA PERFORMANCE</strong><span>HYBRID TRAINING SYSTEM · 6.4.0</span></div></div><div class="top-right"><div class="meta-date">${esc(new Date().toLocaleDateString('fi-FI', { day: 'numeric', month: 'short' }))}<br><span style="color:#cdd6d6">${esc(new Date().toLocaleDateString('fi-FI', { weekday: 'long' }))}</span></div><div class="avatar">HYB</div></div></header>`; }
+function header() { return `<header class="top"><div class="brand"><div class="brand-icon"><img src="symbol.svg" alt="" width="39" height="39"></div><div><strong>STRIDE</strong><span>HYBRID TRAINING SYSTEM · 6.5.0</span></div></div><div class="top-right"><div class="meta-date">${esc(new Date().toLocaleDateString('fi-FI', { day: 'numeric', month: 'short' }))}<br><span style="color:#cdd6d6">${esc(new Date().toLocaleDateString('fi-FI', { weekday: 'long' }))}</span></div><div class="avatar">HYB</div></div></header>`; }
 function coachSessionProposal(plan,insight,budget){
   if(!plan)return null;
   const originalKind=plan.kind;
@@ -1037,7 +1057,7 @@ function todayView() {
     const proposal=isToday?coachSessionProposal(plan,insight,budget):null;
     const canStart=isToday&&!insight.pain;
     const quickChoices=[...new Set([20,30,45,60,plan?.duration].filter(n=>Number.isFinite(n)&&n>=20&&n<=180))].sort((a,b)=>a-b).map(n=>`<button class="choice ${budget===n?'on':''}" data-action="coach-budget" data-minutes="${n}">${n} min</button>`).join('');
-    return `<div class="eyebrow">TRAINING INTELLIGENCE / TODAY · 6.4.0</div><h1 style="margin-top:8px">Hybridi ilman kompromisseja.</h1><p class="lead">Adaptive Coach huomioi palautumisen, harjoittelun ja ajan. Lopullinen päätös on sinulla.</p>
+    return `<div class="eyebrow">TRAINING INTELLIGENCE / TODAY · 6.5.0</div><h1 style="margin-top:8px">Hybridi ilman kompromisseja.</h1><p class="lead">Adaptive Coach huomioi palautumisen, harjoittelun ja ajan. Lopullinen päätös on sinulla.</p>
  <section class="card hero mt"><div class="row between"><span class="eyebrow">${isToday?'PÄIVÄN HARJOITUSEHDOTUS':'TÄNÄÄN · EI SUUNNITELTUA HARJOITUSTA'}</span>${isToday?pill(plan.priority==='key'?'KEY SESSION':'ADAPTIVE','green'):pill('PALAUTUMINEN / VAPAA PÄIVÄ')}</div>
  <div class="headline">${isToday?esc(proposal.title):'Palautumista tai vapaavalintainen treeni'}</div>
  <div class="badge-line">${isToday?pill(formatDuration(proposal.minutes))+pill(ACTIVITIES[plan.sport])+(proposal.modified?pill('Mukautettu','warn'):''):''}</div>
@@ -1156,7 +1176,7 @@ function activeView(){
     ${d.sets.filter(x=>x.exerciseId===e.id).map(set=>`<div class="set ${set.done?'completed-set':''}" data-setrow="${esc(set.id)}"><span>${set.set}</span><input inputmode="decimal" type="text" inputmode="decimal" pattern="[0-9]+([,.][0-9]{1,2})?" value="${String(set.weight).replace(".",",")}" data-set="${esc(set.id)}" data-field="weight" aria-label="Paino sarjalle ${set.set}"><input inputmode="numeric" type="number" min="1" max="50" value="${set.reps}" data-set="${esc(set.id)}" data-field="reps" aria-label="Toistot sarjalle ${set.set}"><input inputmode="numeric" type="number" min="0" max="6" value="${set.rir}" data-set="${esc(set.id)}" data-field="rir" aria-label="RIR sarjalle ${set.set}"><button class="btn sm ${set.done?'checked':'done'}" data-action="set-done" data-id="${esc(set.id)}" aria-pressed="${set.done}" aria-label="${set.done?'Poista valmius sarjalta':'Merkitse sarja valmiiksi'} ${set.set}">${set.done?'✓':'○'}</button></div>`).join('')}
     <p class="micro mt">Syötä työpaino ensimmäisellä käyttökerralla. Jatkossa edelliset toteutuneet painot ja toistot ehdotetaan.</p></div>`:
     `<section class="card mt"><div class="events">${s.segments.map((x,i)=>`<div class="event"><div class="day"><b>${i+1}</b><small>OSIO</small></div><div><div class="name">${esc(x.title)}</div><div class="detail">${esc(x.effort)}</div></div><strong>${x.minutes} min</strong></div>`).join('')}</div></section>`;
-    return `<div class="eyebrow">ACTIVE TRAINING / 6.4.1</div><h1 class="active-head">${esc(s.title)}</h1>
+    return `<div class="eyebrow">ACTIVE TRAINING / 6.5.0</div><h1 class="active-head">${esc(s.title)}</h1>
      <div class="time-strip"><div><span>AIKA</span><br><b id="elapsed">00:00</b></div><div><span>SARJAT</span><br><b>${done}/${d.sets.length}</b></div><div><span>LEPO</span><br><b id="rest">—</b></div><button class="btn sm ghost" data-action="rest-skip">Ohita</button></div>
      ${workoutParts}
      <div class="btn-row mt"><button class="btn primary" data-action="finish-modal">Lopeta ja kirjaa →</button><button class="btn danger" data-action="discard">Hylkää harjoitus</button></div>`;
@@ -1216,8 +1236,8 @@ function settingsView() {
   <p class="soft mt" id="sync-message">${esc(syncMessage)}</p>
   <p class="micro mt">Garmin-avaimet, Oura Client Secret ja OAuth-tokenit pysyvät Cloudflaressa. ADMIN_TOKEN on vain istuntomuistissa; laitteen paritus tallentaa selaimen IndexedDB:hen ei-vietävän allekirjoitusavaimen. Harjoituskirjaukset pysyvät paikallisessa selaimessa eivätkä synkronoidu laitteiden välillä.</p>
 </section>
- <div class="title-row"><h2>Backup & data portability</h2></div><section class="card"><p class="soft">Tiedot säilyvät tällä laitteella selaimen tallennustilassa. Ne eivät synkronoidu iPhonen, iPadin ja Macin välillä. Vie varmuuskopio ennen sovelluksen uudelleenasennusta tai Pages-sivun muutosta. Garmin/Oura-tuonti hyväksyy vain rajapintojen JSON-tietoja, ei FIT-tiedostoja.</p><div class="btn-row mt">${btn('export', 'Vie JSON', 'primary')}${btn('export-csv', 'Vie CSV')}${btn('import', 'Tuo JSON')}${btn('import-garmin', 'Tuo Garmin JSON')}${btn('import-oura', 'Tuo Oura JSON')}</div><input type="file" id="backup-file" accept=".json,application/json" hidden><input type="file" id="garmin-file" accept=".json,application/json" hidden><input type="file" id="oura-file" accept=".json,application/json" hidden><div class="divider"></div><div class="status">Uusi aloitus: vanhaa harjoitushistoriaa ei tuoda automaattisesti. Voit viedä uuden harjoitushistorian JSON-muodossa.</div><div class="btn-row mt">${btn('export', 'Vie uusi varmuuskopio')}${btn('reset', 'Nollaa 6.0 -tiedot', 'danger')}</div></section>
- <p class="micro mt">Ultra Performance 6.4.0 · Offline-first PWA · 75 % matte black / 20 % gunmetal / 5 % deep green. Ei pilvitallennusta tai automaattisia lääketieteellisiä tulkintoja.</p>`;
+ <div class="title-row"><h2>Backup & data portability</h2></div><section class="card"><p class="soft">Tiedot säilyvät tällä laitteella selaimen tallennustilassa. Ne eivät synkronoidu iPhonen, iPadin ja Macin välillä. Vie varmuuskopio ennen sovelluksen uudelleenasennusta tai Pages-sivun muutosta. Garmin/Oura-tuonti hyväksyy vain rajapintojen JSON-tietoja, ei FIT-tiedostoja.</p><div class="btn-row mt">${btn('export', 'Vie JSON', 'primary')}${btn('export-csv', 'Vie CSV')}${btn('import', 'Tuo JSON')}${btn('import-garmin', 'Tuo Garmin JSON')}${btn('import-oura', 'Tuo Oura JSON')}</div><input type="file" id="backup-file" accept=".json,application/json" hidden><input type="file" id="garmin-file" accept=".json,application/json" hidden><input type="file" id="oura-file" accept=".json,application/json" hidden><div class="divider"></div><div class="status">Uusi aloitus: vanhaa harjoitushistoriaa ei tuoda automaattisesti. Voit viedä uuden harjoitushistorian JSON-muodossa.</div><div class="btn-row mt">${btn('export', 'Vie uusi varmuuskopio')}${btn('reset', 'Nollaa paikalliset tiedot', 'danger')}</div></section>
+ <p class="micro mt"><strong>Stride</strong> · by Oivallus · 6.5.0 · Offline-first PWA. Harjoitustiedot säilyvät tällä laitteella; Garmin- ja Oura-tiedot haetaan yhdistetyistä palveluista.</p>`;
 }
 function modalView() {
     if (!activeModal)
@@ -1290,8 +1310,7 @@ function importExternalFile(file, kind) { if (file.size > 12 * 1024 * 1024) {
 } file.text().then(contents => { try {
     const obj = JSON.parse(contents);
     const result = kind === 'garmin' ? importGarminJSON(state, obj) : importOuraJSON(state, obj);
-    commit();
-    notify(kind === 'garmin' ? `Garmin: ${'added' in result ? result.added : 0} aktiviteettia tuotu` : `Oura: ${result.added} mittausta tuotu`);
+    if (commit()) notify(kind === 'garmin' ? `Garmin: ${'added' in result ? result.added : 0} aktiviteettia tuotu` : `Oura: ${result.added} mittausta tuotu`);
 }
 catch (e) {
     alert('Tuonti epäonnistui: ' + e.message);
@@ -1383,6 +1402,7 @@ window.addEventListener('click', (evt) => {
             }
         }
         s.done=!s.done;
+        if (!s.done) { restUntil = 0; d.restUntil = 0; }
         if(s.done){
             restUntil=Date.now() + ((e?.rest||90)*1000);
             d.restUntil=restUntil;
@@ -1422,8 +1442,7 @@ window.addEventListener('click', (evt) => {
     }
     if (action === 'capacity') {
         state.profile.capacity = value;
-        commit();
-        notify('Kapasiteetti tallennettu. Luo viikko uudelleen ottaa sen käyttöön.');
+        if (commit()) notify('Kapasiteetti tallennettu. Luo viikko uudelleen ottaa sen käyttöön.');
         return;
     }
     if (action === 'rebuild-plan')
@@ -1460,17 +1479,16 @@ window.addEventListener('click', (evt) => {
     }
     if (action === 'split') {
         state.profile.split = value;
-        commit();
-        notify('Jako tallennettu tuleville viikoille');
+        if (commit()) notify('Jako tallennettu tuleville viikoille');
         return;
     }
     if (action === 'export') {
-        download(`ultra-performance-backup-${filenameDate()}.json`, JSON.stringify(state, null, 2));
+        download(`stride-backup-${filenameDate()}.json`, JSON.stringify(state, null, 2));
         notify('Varmuuskopio ladattu');
         return;
     }
     if (action === 'export-csv') {
-        download(`ultra-performance-${filenameDate()}.csv`, csvExport(state), 'text/csv;charset=utf-8');
+        download(`stride-${filenameDate()}.csv`, csvExport(state), 'text/csv;charset=utf-8');
         return;
     }
     if (action === 'import') {
@@ -1505,7 +1523,7 @@ window.addEventListener('click', (evt) => {
         return openModal('activityFeedback');
     }
     if (action === 'reset') {
-        if (!confirm('Aloitetaanko Ultra Performance 6.0 alusta? Kaikki tämän version harjoitustiedot poistetaan tältä laitteelta.'))
+        if (!confirm('Aloitetaanko Stride alusta? Kaikki tämän laitteen harjoitustiedot poistetaan. Varmista JSON-varmuuskopio ensin.'))
             return;
         state = initial();
         makeWeek(state, today());
@@ -1535,8 +1553,7 @@ window.addEventListener('change', evt => {
             state.profile.autopilot = target.checked;
         else if (name === 'goalWeight' || name === 'kettlebellKg' || name === 'maxMinutes')
             state.profile[name] = num(target.value);
-        commit(false);
-        notify('Asetus tallennettu');
+        if (commit(false)) notify('Asetus tallennettu');
         return;
     }
     if (target.id === 'exercise-chart') {
@@ -1588,8 +1605,7 @@ window.addEventListener('submit', evt => {
             const title = ACTIVITIES[sport] || 'Muu liikunta';
             addActivity(state, { source: 'manual', date, startedAt: `${date}T12:00:00`, sport, kind: 'unplanned', title, duration, distanceKm: num(fd.get('distance')), ascentM: num(fd.get('ascent')), avgHr: num(fd.get('hr')), sessionRpe: rpe, legStress: legs, notes: String(fd.get('notes') || '').slice(0, 500), sets: [] });
             activeModal = '';
-            commit();
-            notify('Aktiviteetti tallennettu ja kuormitus huomioitu');
+            if (commit()) notify('Aktiviteetti tallennettu ja kuormitus huomioitu');
             return;
         }
         if (form.id === 'recovery-form') {
@@ -1602,16 +1618,14 @@ window.addEventListener('submit', evt => {
             }
             recordRecovery(state, entry);
             activeModal = '';
-            commit();
-            notify('Palautumisen check-in tallennettu');
+            if (commit()) notify('Palautumisen check-in tallennettu');
             return;
         }
         if (form.id === 'finish-form') {
             const a = finishSession(state, { rpe: num(fd.get('rpe'), 7), legs: num(fd.get('legs')), duration:parseOptional(fd,'duration'), distance: parseOptional(fd, 'distance'), ascent: parseOptional(fd, 'ascent'), avgHr: parseOptional(fd, 'avgHr'), notes: String(fd.get('notes') || '').slice(0, 500) });
             activeModal = '';
             tab = 'today';
-            commit();
-            notify(`${a.title} tallennettu`);
+            if (commit()) notify(`${a.title} tallennettu`);
             return;
         }
         if (form.id === 'feedback-form') {
@@ -1623,8 +1637,7 @@ window.addEventListener('submit', evt => {
             a.legStress = clamp(num(fd.get('legs')), 0, 3);
             if(!wasHigh&&a.sessionRpe>=7&&a.legStress>=3)__engine.adaptAfter(state,a);
             activeModal = '';
-            commit();
-            notify('Smart Check-in tallennettu');
+            if (commit()) notify('Smart Check-in tallennettu');
             return;
         }
         if (form.id === 'plan-form') {
@@ -1642,8 +1655,7 @@ window.addEventListener('submit', evt => {
             p.duration = clamp(num(fd.get('duration'), 45), 20, 240);
             p.locked = false;
             activeModal = '';
-            commit();
-            notify('Suunnitelma päivitetty');
+            if (commit()) notify('Suunnitelma päivitetty');
             return;
         }
     }
