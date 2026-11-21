@@ -1,13 +1,13 @@
-/* Ultra Performance 6.4.1 — network-first pages, offline fallback, update discovery. */
-const CACHE_NAME='ultra-performance-v6.4.1';
-const ASSETS=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
+/* Stride 6.5.0 — network-first pages, offline fallback, update discovery. */
+const CACHE_NAME='ultra-performance-v6.5.0-stride';
+const ASSETS=['./','./index.html','./manifest.webmanifest','./symbol.svg','./icon.svg','./icon-32.png','./icon-180.png','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(ASSETS)));
   self.skipWaiting();
 });
 self.addEventListener('activate',event=>{
   event.waitUntil(Promise.all([
-    caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE_NAME).map(k=>caches.delete(k)))),
+    caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE_NAME&&k.startsWith('ultra-performance-v')).map(k=>caches.delete(k)))),
     self.clients.claim()
   ]));
 });
@@ -28,6 +28,9 @@ self.addEventListener('fetch',event=>{
   }).catch(async()=>{
     const cache=await caches.open(CACHE_NAME);
     const canonical=new URL(req.url);canonical.search='';canonical.hash='';
-    return (await cache.match(canonical.href))||(await cache.match(new URL('./index.html',self.registration.scope).href))||Response.error();
+    const cached = await cache.match(canonical.href);
+    if (cached) return cached;
+    if (req.mode === 'navigate') return (await cache.match(new URL('./index.html',self.registration.scope).href)) || Response.error();
+    return Response.error();
   }));
 });

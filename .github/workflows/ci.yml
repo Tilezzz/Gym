@@ -1,0 +1,24 @@
+name: Stride 6.5 checks
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: ['feature/6.5-stabilization']
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Engine regression tests
+        run: node --test tests/*.test.cjs
+      - name: Static JavaScript syntax check
+        run: |
+          node -e "const fs=require('fs');const s=fs.readFileSync('index.html','utf8');const m=s.match(/<script type=\"module\">([\\s\\S]*?)<\\/script>/);if(!m)throw Error('Missing script');fs.writeFileSync('/tmp/ultra-performance.mjs',m[1]);"
+          node --check /tmp/ultra-performance.mjs
+      - name: Verify manifest
+        run: node -e "JSON.parse(require('fs').readFileSync('manifest.webmanifest','utf8'))"
