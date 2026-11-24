@@ -289,22 +289,69 @@ function lastSets(state, id) {
     .map(a => (Array.isArray(a.sets) ? a.sets : []).filter(s => s.exerciseId === id && s.done === true && Number(s.reps) >= 1))
     .find(sets => sets.length > 0) || [];
 }
+// Product heuristics, not a clinical risk score. Missing data never means success.
+const hasNumber = v => v !== null && v !== undefined && v !== '' && Number.isFinite(Number(v));
+function datedActivities(state, predicate, date = today()) {
+    const seen = new Set();
+    return state.activities.filter(predicate).map(a => ({ a, day: String(a.date || a.startedAt || '').slice(0,10) }))
+      .filter(x => /^\d{4}-\d{2}-\d{2}$/.test(x.day) && Number.isFinite(Date.parse(x.day)) && x.day <= date)
+      .sort((a,b) => b.day.localeCompare(a.day) || String(b.a.startedAt || '').localeCompare(String(a.a.startedAt || '')))
+      .filter(x => { if(seen.has(x.day)) return false; seen.add(x.day); return true; });
+}
 function progression(state, e) {
     if (e.venue === 'home')
         return { weight: e.bodyweight ? 0 : state.profile.kettlebellKg, reason: 'Kotona: etene toistoissa tai liikevariantissa, älä kuvitellulla painonkorotuksella.', increase: false };
-    const prev = lastSets(state, e.id);
-    if (!prev.length)
-        return { weight: null, reason: 'Valitse ensimmäinen työpaino tavoite-RIR:n mukaan.', increase: false };
+    const history = datedActivities(state, a => a.sport === 'strength' && Array.isArray(a.sets) && a.sets.some(s => s.exerciseId === e.id && s.done === true));
+    const sessions = history.map(x => ({ ...x, sets: x.a.sets.filter(s => s.exerciseId === e.id && s.done === true) }));
+    const prev = sessions[0]?.sets || [];
+    if (!prev.length) return { weight: null, reason: 'Valitse ensimmäinen työpaino tavoite-RIR:n mukaan.', increase: false };
     const kg = Number(prev[0].weight);
-    if (!Number.isFinite(kg) || kg <= 0)
-        return { weight: null, reason: 'Edellisen työpainon tiedot puuttuvat. Valitse paino itse.', increase: false };
-    const increment = Number(e.increment);
-    const comparable = prev.every(s => Number.isFinite(Number(s.weight)) && Math.abs(Number(s.weight) - kg) < .01);
-    if (comparable && prev.length >= 2 && Number.isFinite(increment) && increment > 0 && prev.every(s => Number(s.reps) >= e.max && Number(s.rir) >= 1))
-        return { weight: Number((kg + increment).toFixed(2)), reason: `Edelliset sarjat toistoalueen yläpäässä. Ehdotus +${increment} kg.`, increase: true };
-    if (prev.some(s => s.reps < e.min && s.rir === 0))
-        return { weight: kg, reason: 'Edellisessä treenissä alaraja alittui failurella. Pidä tai kevennä kuormaa.', increase: false };
-    return { weight: kg, reason: `Edellinen toteuma ${prev.map(s => s.reps).join(' / ')}. Pyri lisäämään toistoja.`, increase: false };
+    if (!hasNumber(prev[0].weight) || kg <= 0) return { weight: null, reason: 'Edellisen työpainon tiedot puuttuvat. Valitse paino itse.', increase: false };
+    const hold = reason => ({ weight: kg, reason, increase: false });
+    if (diffDays(today(),sessions[0].day) > 21) return { weight: null, reason: 'Viimeisestä liikekohtaisesta suorituksesta on yli 21 päivää. Arvioi aloituspaino uudelleen; vanhaa painoa ei ehdoteta automaattisesti.', increase: false };
+    const evidence = coachEvidence(state);
+    if (evidence.level !== 'normal') return hold('Palautumisessa on huomioitavaa. Ei painonkorotusta; arvioi päivän kuormitus ja tarvittaessa kevennä.');
+    const recent = sessions.filter(x => diffDays(today(),x.day) <= 42).slice(0,2);
+    const comparable = x => x.sets.length >= Math.max(2,Number(e.sets)||2) && x.sets.every(s => hasNumber(s.weight) && Math.abs(Number(s.weight)-kg)<.01 && hasNumber(s.reps) && Number(s.reps)>0 && hasNumber(s.rir) && Number(s.rir)>=0 && Number(s.rir)<=6);
+    if (recent.length < 2) return hold('Vasta yksi tuore suoritus. Toista hallitusti; painonnosto vaatii kaksi vertailukelpoista harjoitusta.');
+    if (!recent.every(comparable)) return hold('Kahden viime harjoituksen sarjat, painot tai RIR eivät ole vertailukelpoisia. Pidä kuorma ja täydennä toteumat.');
+    if (recent.every(x => x.sets.some(s => Number(s.reps)<e.min && Number(s.rir)===0)))
+        return hold('Toistoalueen alaraja alittui failurella kahdessa harjoituksessa. Harkitse kevennystä; painoa ei nosteta automaattisesti.');
+    const increment=Number(e.increment);
+    if (recent.every(x => x.sets.every(s => Number(s.reps)>=e.max && Number(s.rir)>=1))) {
+        if (!(increment>0 && increment/kg<=.10)) return hold('Toistotavoite täyttyi kahdesti, mutta määritetty painoporras on suuri tai puuttuu. Valitse mahdollinen pienempi korotus itse.');
+        return { weight:Number((kg+increment).toFixed(2)), reason:`Kaksi vertailukelpoista harjoitusta toistoalueen yläpäässä, vähintään 1 RIR. Ehdotus +${increment} kg.`, increase:true };
+    }
+    return hold(`Edellinen toteuma ${prev.map(s=>s.reps).join(' / ')}. Pidä paino ja tavoittele hallittuja toistoja; kahden harjoituksen korotusehto ei vielä täyty.`);
+}
+function runningProgression(state, kind, date = today()) {
+    const result = (status, reason, evidence = [], suggestedMinutes = null) => ({status,reason,evidence,suggestedMinutes});
+    if (!['run-easy','run-long','run-quality'].includes(kind)) return result('unknown','Tälle lajille ei vielä ole juoksuprogression arviota.');
+    const history=datedActivities(state,a=>a.sport==='run' && a.kind===kind,date);
+    if (!history.length) return result('unknown','Ei tunnistettuja saman tyypin juoksuja. Garmin-tuonnin harjoitustyyppiä ei arvata nimestä tai keskisykkeestä.');
+    if (diffDays(date,history[0].day)>21) return result('return','Yli 21 päivää edellisestä saman tyypin juoksusta. Arvioi paluu kevyemmästä lähtötasosta; vanhaa kestoa ei nosteta.',[history[0].day]);
+    const context=coachEvidence(state,date);
+    if (context.level==='hold') return result('hold','Oireita kirjattu. Arvioi oireet ennen kuormituksen suunnittelua.');
+    if (context.level!=='normal' || recentLegLoad(state,date).high) return result('hold','Palautuminen tai viime päivien jalkakuorma puoltaa nykyisen kuorman arviointia. Ei lisäystä nyt.');
+    const last=history.filter(x=>diffDays(date,x.day)<=42).slice(0,2), dates=last.map(x=>x.day);
+    if (last.length<2) return result('unknown','Tarvitaan kaksi tuoretta saman tyypin juoksua eri päiviltä.',dates);
+    const valid=x=>hasNumber(x.a.duration) && x.a.duration>=20 && x.a.duration<=180 && hasNumber(x.a.sessionRpe) && x.a.sessionRpe>=1 && x.a.sessionRpe<=10 && hasNumber(x.a.legStress) && x.a.legStress>=0 && x.a.legStress<=3;
+    if (!last.every(valid)) return result('unknown','Kesto, koettu rasitus tai jalkojen tuntuma puuttuu. Täydennä harjoituksen palaute ennen etenemistä.',dates);
+    if (last.every(x=>x.a.sessionRpe>=8 || x.a.legStress>=3)) return result('ease','Kaksi saman tyypin juoksua tuntui raskaalta. Harkitse kevyempää toteutusta; kestoa tai tehoa ei lisätä.',dates);
+    if (!last.every(x=>hasNumber(x.a.plannedMinutes) && x.a.plannedMinutes>=20 && x.a.duration>=.9*x.a.plannedMinutes))
+        return result('hold','Suunnitellun keston toteutumisesta ei ole riittävää näyttöä. Lyhyt treeni voi johtua ajasta; sitä ei tulkita kunnon heikkenemiseksi.',dates);
+    const durations=last.map(x=>Number(x.a.duration));
+    if (Math.max(...durations)/Math.min(...durations)>1.1) return result('hold','Viime juoksujen kestot poikkeavat toisistaan. Vakiinnuta toteuma ennen seuraavaa lisäystä.',dates);
+    const easy=last.every(x=>x.a.sessionRpe<=6 && x.a.legStress<=1);
+    if (!easy) return result('hold','Pidä nykyinen kuorma. Toteumat eivät vielä tue lisäystä.',dates);
+    if (kind==='run-long') {
+        const base=Math.floor(Math.min(...durations));
+        const next=base+Math.min(5,Math.floor(base*.05));
+        if (next>180) return result('hold','Kesto on tämän version arviointirajalla. Älä lisää sitä automaattisesti.',dates);
+        return result('build',`Kaksi samankestoista pitkää lenkkiä onnistui hallitusti. Harkitse seuraavaksi ${next} min kevyttä juoksua, jos viikon muu kuorma ja käytettävissä oleva aika sallivat.`,dates,next);
+    }
+    if(kind==='run-quality') return result('repeat','Kaksi laatutreeniä onnistui hallitusti. Säilytä vielä kokonaiskesto ja teho; tarkat vetokohtaiset toteumat tarvitaan ennen intervallikuorman kasvattamista.',dates);
+    return result('repeat','Kevyet lenkit toteutuivat hallitusti. Säilytä ne kevyinä; kaikkea harjoittelua ei tarvitse kasvattaa samalla viikolla.',dates);
 }
 function estimate(es, minutes, venue) {
     const warm = Math.min(10, minutes <= 30 ? 5 : 8);
@@ -359,7 +406,7 @@ function startSession(state, kind, minutes, planId) {
     const plan = state.plan.find(p => p.id === planId), session = generate(state, kind, minutes, plan);
     const sets = session.exercises.flatMap(e => {
         const suggested = progression(state, e).weight;
-        const previous = lastSets(state, e.id);
+        const previous = suggested === null ? [] : lastSets(state, e.id);
         return Array.from({ length: e.sets }, (_, ix) => {
             const prev = previous[ix];
             const lastWeight = prev?.weight > 0 ? prev.weight : suggested;
@@ -468,7 +515,7 @@ function coachRecommendation(state, date = today()) {
 function exerciseHistory(state, exId) { return state.activities.filter(a => a.sport === 'strength').flatMap(a => { const s = a.sets.filter(x => x.done && x.exerciseId === exId); return s.length ? [{ date: a.date, kg: Math.max(...s.map(x => x.weight)), reps: Math.max(...s.map(x => x.reps)), rir: s[0].rir }] : []; }).sort((a, b) => a.date.localeCompare(b.date)); }
 function formatDuration(mins) { return mins >= 60 ? `${Math.floor(mins / 60)} h ${mins % 60 ? mins % 60 + ' min' : ''}`.trim() : `${mins} min`; }
 
-return { defaultProfile, initial, sportOf, candidateKinds, makeWeek, getRecovery, recentLegLoad, recoveryAdvice, coachEvidence, hybridBalance, lastSets, progression, generate, startSession, finishSession, addActivity, recordRecovery, adaptAfter, swapPlan, weekStats, coachRecommendation, exerciseHistory, formatDuration };
+return { defaultProfile, initial, sportOf, candidateKinds, makeWeek, getRecovery, recentLegLoad, recoveryAdvice, coachEvidence, hybridBalance, lastSets, progression, runningProgression, generate, startSession, finishSession, addActivity, recordRecovery, adaptAfter, swapPlan, weekStats, coachRecommendation, exerciseHistory, formatDuration };
 })();
 
 
@@ -1074,6 +1121,11 @@ function trainSelection() {
     }
     return { plan: null, session: generate(state, selectedKind, selectedMinutes), kind: selectedKind, minutes: selectedMinutes };
 }
+function runningAdviceView(kind) {
+    if (!kind.startsWith('run')) return '';
+    const advice=__engine.runningProgression(state,kind);
+    return `<section class="card mt"><div class="eyebrow">SEURAAVA ASKEL · JUOKSU</div><p class="soft mt">${esc(advice.reason)}</p>${advice.evidence.length ? `<p class="micro mt">Toteumat: ${advice.evidence.map(fiDate).map(esc).join(' · ')}</p>` : ''}<p class="micro mt">Ehdotus nykyisen historian perusteella. Se ei muuta suunnitelmaa tai tämän harjoituksen kestoa.</p></section>`;
+}
 function sessionDetails(session) {
     return session.sport === 'strength'
       ? session.exercises.map((e,i) => `<div class="history-row"><div><div class="date">${i+1} · ${esc(e.group)}</div><b>${esc(e.name)}</b><p>${e.sets} × ${e.min}–${e.max} · lepo ${e.rest} s · RIR ${session.rirTarget}</p><p>${esc(progression(state,e).reason)}</p></div><span class="pill">${progression(state,e).weight ?? '—'} kg</span></div>`).join('')
@@ -1091,6 +1143,7 @@ function previewView() {
       <p class="soft mt">${isToday ? esc(proposal?.reason || session.reason) : 'Suunnitelman tämänhetkinen sisältö. Päivän palautuminen ja siihen mennessä kertyneet suoritukset voivat vielä tarkentaa harjoitusta. Painoehdotukset perustuvat nykyiseen historiaan.'}</p>
       ${p.status !== 'planned' ? '<p class="soft mt">Tämä on suunnitelman esikatselu. Toteutunut harjoitus löytyy historiasta.</p>' : ''}</section>
       <section class="card mt"><h2>Harjoituksen sisältö</h2>${session.sport === 'strength' ? `<p class="soft mt">Alkulämmittely noin ${session.warmupMinutes} min.</p>` : ''}${sessionDetails(session)}</section>
+      ${runningAdviceView(p.kind)}
       <p class="soft mt">Esikatselu ei käynnistä harjoitusta eikä muuta tallennettuja tietoja.</p>
       ${isToday && !state.active ? `<button class="btn primary block mt" data-action="start-plan" data-coach="1" data-id="${esc(p.id)}" ${getRecovery(state)?.pain ? 'disabled' : ''}>Aloita päivän harjoitus →</button>` : ''}`;
 }
@@ -1166,6 +1219,7 @@ function trainView() {
       ${planned && !choice.plan ? `<section class="card mt"><div class="row between"><strong>Seuraava suunnitelmassa</strong>${pill(fiDate(planned.date))}</div><p class="soft mt">${esc(planned.title)} · ${planned.duration} min</p><button class="btn ghost block mt" data-action="preview-plan" data-id="${esc(planned.id)}">Näytä suunniteltu harjoitus →</button></section>`:''}
       <button class="btn ghost block mt library-toggle" data-action="library-toggle" aria-expanded="${workoutLibraryOpen}">${workoutLibraryOpen?'Piilota harjoituskirjasto −':'Vaihda lajia tai harjoitusta +'} </button>
       ${workoutLibraryOpen?`<section class="card mt"><div class="section-label">HARJOITUSKIRJASTO</div>${types}</section>`:''}
+      ${runningAdviceView(choice.kind)}
       <details open class="card mt train-details"><summary>Harjoituksen sisältö · ${preview.sport==='strength'?preview.exercises.reduce((s,e)=>s+e.sets,0)+' työsarjaa':preview.segments.length+' osiota'}</summary><div class="mt">${details}</div></details>
       <button class="btn ghost block mt" data-action="activity">Kirjaa satunnainen liikunta</button>`;
 }

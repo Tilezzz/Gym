@@ -41,17 +41,20 @@ test('T03: save failure returns false',()=>{
   localStorage.setItem=()=>{throw new Error('QuotaExceededError')};
   try{assert.equal(store.save(s),false)}finally{localStorage.setItem=original}
 });
-test('T06: completed top-range sets trigger progression',()=>{
-  const s=make();s.activities.push(history([{weight:50,reps:exercise.max,rir:2},{weight:50,reps:exercise.max,rir:1}]));
+const successSets=()=>Array.from({length:exercise.sets},()=>({weight:50,reps:exercise.max,rir:2}));
+const daysAgo=n=>new Date(Date.now()-n*86400000).toISOString();
+const twoSuccesses=s=>{s.activities.push(history(successSets(),daysAgo(3)),history(successSets(),daysAgo(7)));};
+test('T06: two complete top-range workouts trigger progression',()=>{
+  const s=make();twoSuccesses(s);
   const p=engine.progression(s,exercise);assert.equal(p.increase,true);assert.equal(p.weight,50+exercise.increment);
 });
 test('T07: incomplete repetition range does not increase weight',()=>{
   const s=make();s.activities.push(history([{weight:50,reps:exercise.min,rir:2},{weight:50,reps:exercise.max,rir:1}]));
   assert.equal(engine.progression(s,exercise).increase,false);
 });
-test('T08: uncompleted sets do not affect progression',()=>{
-  const s=make();const a=history([{weight:50,reps:exercise.max,rir:2},{weight:50,reps:exercise.max,rir:1}]);
-  a.sets.push({exerciseId:exercise.id,done:false,reps:1,rir:0,weight:50});s.activities.push(a);
+test('T08: uncompleted sets do not affect progression after two successful workouts',()=>{
+  const s=make();twoSuccesses(s);
+  s.activities[0].sets.push({exerciseId:exercise.id,done:false,reps:1,rir:0,weight:50});
   assert.equal(engine.progression(s,exercise).increase,true);
 });
 test('T09: mixed weights must not trigger load increase',()=>{
@@ -62,7 +65,7 @@ test('T10: new exercise must not invent starting weight',()=>{
   assert.equal(engine.progression(make(),exercise).weight,null);
 });
 test('T11: proposed weights never enter history before completed sets',()=>{
-  const s=make();s.activities.push(history([{weight:50,reps:exercise.max,rir:2},{weight:50,reps:exercise.max,rir:2}]));
+  const s=make();twoSuccesses(s);
   const p=engine.progression(s,exercise);assert.ok(p.increase);
   assert.equal(s.activities[0].sets[0].weight,50);
 });
