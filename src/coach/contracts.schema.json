@@ -1,0 +1,561 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/context",
+  "$defs": {
+    "context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "asOf",
+        "timezone",
+        "activePlanRef",
+        "hasActiveSession",
+        "planCoverage",
+        "plans",
+        "evidence",
+        "loadSummaries"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "asOf": {
+          "type": "string",
+          "maxLength": 40
+        },
+        "timezone": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "activePlanRef": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 120
+        },
+        "hasActiveSession": {
+          "type": "boolean"
+        },
+        "planCoverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "from",
+            "through",
+            "complete"
+          ],
+          "properties": {
+            "from": {
+              "type": "string",
+              "maxLength": 10
+            },
+            "through": {
+              "type": "string",
+              "maxLength": 10
+            },
+            "complete": {
+              "type": "boolean"
+            }
+          }
+        },
+        "plans": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "ref",
+              "date",
+              "sport",
+              "kind",
+              "durationMinutes",
+              "status",
+              "locked"
+            ],
+            "properties": {
+              "ref": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "date": {
+                "type": "string",
+                "maxLength": 10
+              },
+              "sport": {
+                "type": "string",
+                "enum": [
+                  "run",
+                  "strength",
+                  "cycle",
+                  "other"
+                ]
+              },
+              "kind": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "durationMinutes": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 240
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "planned",
+                  "done",
+                  "adjusted",
+                  "skipped"
+                ]
+              },
+              "locked": {
+                "type": "boolean"
+              }
+            }
+          },
+          "maxItems": 7
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "origin",
+              "source",
+              "metric",
+              "value",
+              "observedAt",
+              "day",
+              "fetchedAt",
+              "freshness"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "origin": {
+                "type": "string",
+                "enum": [
+                  "measured",
+                  "self_reported",
+                  "inferred"
+                ]
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "garmin",
+                  "oura",
+                  "check_in",
+                  "history_summary",
+                  "engine"
+                ]
+              },
+              "metric": {
+                "type": "string",
+                "enum": [
+                  "sleep_hours",
+                  "energy",
+                  "legs",
+                  "symptoms",
+                  "hrv_ms",
+                  "rest_hr_bpm",
+                  "readiness",
+                  "time_budget",
+                  "sleep_pattern"
+                ]
+              },
+              "value": {
+                "type": [
+                  "number",
+                  "string",
+                  "null"
+                ],
+                "maxLength": 120
+              },
+              "observedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 40
+              },
+              "day": {
+                "type": "string",
+                "maxLength": 10
+              },
+              "fetchedAt": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 40
+              },
+              "freshness": {
+                "type": "string",
+                "enum": [
+                  "fresh",
+                  "stale",
+                  "unknown",
+                  "invalid"
+                ]
+              }
+            }
+          },
+          "maxItems": 16
+        },
+        "loadSummaries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "windowDays",
+              "knownSrpeLoad",
+              "knownSrpeLoadUpper",
+              "unknownRpeMinutes",
+              "runMinutes",
+              "strengthSets",
+              "coverageKnown",
+              "possibleDuplicateCount"
+            ],
+            "properties": {
+              "windowDays": {
+                "type": "integer",
+                "enum": [
+                  2,
+                  7,
+                  28
+                ]
+              },
+              "knownSrpeLoad": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "knownSrpeLoadUpper": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "unknownRpeMinutes": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "runMinutes": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "strengthSets": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "coverageKnown": {
+                "type": "boolean"
+              },
+              "possibleDuplicateCount": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            }
+          },
+          "maxItems": 3
+        }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "ruleVersion",
+        "action",
+        "safety",
+        "uncertainty",
+        "reasons",
+        "missingFields",
+        "questions",
+        "allowedProposalTypes",
+        "proposal"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "type": "string",
+          "const": "1.0"
+        },
+        "ruleVersion": {
+          "type": "string",
+          "const": "7.0.0-preview.1"
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "perform",
+            "ease",
+            "move",
+            "rest",
+            "ask"
+          ]
+        },
+        "safety": {
+          "type": "string",
+          "enum": [
+            "routine",
+            "clarify",
+            "stop"
+          ]
+        },
+        "uncertainty": {
+          "type": "string",
+          "enum": [
+            "low",
+            "moderate",
+            "high"
+          ]
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "code",
+              "evidenceIds"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "maxLength": 120
+              },
+              "evidenceIds": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 120
+                },
+                "maxItems": 16
+              }
+            }
+          },
+          "maxItems": 3
+        },
+        "missingFields": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "maxItems": 8
+        },
+        "questions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 240
+          },
+          "maxItems": 2
+        },
+        "allowedProposalTypes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "move_session",
+              "shorten_session",
+              "replace_with_easy",
+              "skip_session"
+            ]
+          },
+          "maxItems": 4
+        },
+        "proposal": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "planRef",
+            "targetDate",
+            "durationMinutes",
+            "targetKind"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "move_session",
+                "shorten_session",
+                "replace_with_easy",
+                "skip_session"
+              ]
+            },
+            "planRef": {
+              "type": "string",
+              "maxLength": 120
+            },
+            "targetDate": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 10
+            },
+            "durationMinutes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 20,
+              "maximum": 240
+            },
+            "targetKind": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 120
+            }
+          }
+        }
+      }
+    },
+    "proposal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "planRef",
+        "targetDate",
+        "durationMinutes",
+        "targetKind"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "move_session",
+            "shorten_session",
+            "replace_with_easy",
+            "skip_session"
+          ]
+        },
+        "planRef": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "targetDate": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 10
+        },
+        "durationMinutes": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 20,
+          "maximum": 240
+        },
+        "targetKind": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 120
+        }
+      }
+    },
+    "modelReply": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "answer",
+        "evidenceIds",
+        "proposedAction",
+        "needsClarification"
+      ],
+      "properties": {
+        "answer": {
+          "type": "string",
+          "maxLength": 3000
+        },
+        "evidenceIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "maxItems": 16
+        },
+        "proposedAction": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "required": [
+            "type",
+            "planRef",
+            "targetDate",
+            "durationMinutes",
+            "targetKind"
+          ],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": [
+                "move_session",
+                "shorten_session",
+                "replace_with_easy",
+                "skip_session"
+              ]
+            },
+            "planRef": {
+              "type": "string",
+              "maxLength": 120
+            },
+            "targetDate": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 10
+            },
+            "durationMinutes": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 20,
+              "maximum": 240
+            },
+            "targetKind": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 120
+            }
+          }
+        },
+        "needsClarification": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "1.0",
+  "asOf": "2026-11-24T10:00:00Z",
+  "timezone": "Europe/Helsinki",
+  "plans": [
+    {
+      "ref": "p1",
+      "date": "2026-11-24",
+      "sport": "run",
+      "kind": "run-easy",
+      "durationMinutes": 40,
+      "status": "planned",
+      "locked": false
+    }
+  ],
+  "evidence": [
+    {
+      "id": "energy",
+      "origin": "self_reported",
+      "source": "check_in",
+      "metric": "energy",
+      "value": 2,
+      "observedAt": "2026-11-24T09:30:00Z",
+      "day": "2026-11-24",
+      "fetchedAt": null,
+      "freshness": "fresh"
+    },
+    {
+      "id": "symptoms",
+      "origin": "self_reported",
+      "source": "check_in",
+      "metric": "symptoms",
+      "value": "none",
+      "observedAt": "2026-11-24T09:30:00Z",
+      "day": "2026-11-24",
+      "fetchedAt": null,
+      "freshness": "fresh"
+    },
+    {
+      "id": "sleep",
+      "origin": "self_reported",
+      "source": "check_in",
+      "metric": "sleep_hours",
+      "value": 4.7,
+      "observedAt": "2026-11-24T06:00:00Z",
+      "day": "2026-11-24",
+      "fetchedAt": null,
+      "freshness": "fresh"
+    },
+    {
+      "id": "pattern",
+      "origin": "self_reported",
+      "source": "check_in",
+      "metric": "sleep_pattern",
+      "value": "single_night",
+      "observedAt": "2026-11-24T09:30:00Z",
+      "day": "2026-11-24",
+      "fetchedAt": null,
+      "freshness": "fresh"
+    }
+  ],
+  "loadSummaries": [
+    {
+      "windowDays": 7,
+      "knownSrpeLoad": 600,
+      "knownSrpeLoadUpper": 600,
+      "unknownRpeMinutes": 0,
+      "runMinutes": 100,
+      "strengthSets": 12,
+      "coverageKnown": true,
+      "possibleDuplicateCount": 0
+    }
+  ],
+  "activePlanRef": null,
+  "planCoverage": {
+    "from": "2026-11-24",
+    "through": "2026-12-01",
+    "complete": true
+  },
+  "hasActiveSession": false
+}
