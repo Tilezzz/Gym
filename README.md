@@ -1,48 +1,40 @@
 # Stride · by Oivallus
 
-**Stride** (formerly Ultra Performance) is a hybrid strength/endurance training PWA. The product name and visuals have changed; the **technical identity and user data have not**.
+**Stride** (formerly Ultra Performance) is a hybrid strength/endurance training PWA.
 
-- Production URL remains `https://tilezzz.github.io/Gym/`.
-- GitHub repository remains `Tilezzz/Gym`.
-- Manifest `id`, `start_url`, and `scope` remain `./`.
+## Verified release status (23 Nov 2026)
+- **Stride 6.5.0 has been merged** into `main` on 21 Nov 2026, via [PR #1](https://github.com/Tilezzz/Gym/pull/1).
+- Merge commit: [`7f33647`](https://github.com/Tilezzz/Gym/commit/7f336478a9cc4dbcd174e85d81d3c7446c50e2a7). The original 6.5 stabilization commit `023dba1` is preserved.
+- PR #1 reports **24 automated tests passed**, a successful GitHub Pages deployment (run `44907488282`) and successful Cloudflare `gym` production build, with code and deployed assets matching the reviewed source.
+- Live use of Garmin/Oura and installed-iPhone PWA behavior remain **device-side acceptance checks**. This document does not claim they have been independently completed.
+- Public app URL remains https://tilezzz.github.io/Gym/ ; GitHub repository remains `Tilezzz/Gym`.
+- Current development priorities, including Smart Exercise Swap and a future AI Coach, must be confirmed by Stride Product HQ rather than inferred from older review notes.
+
+## Critical compatibility constraints
+- Manifest `id`, `start_url` and `scope` remain `./`; installed PWA identity and URL must not change during routine updates.
 - The version-6 data schema and `localStorage` key `ultra-performance-v6-fresh-20261106` remain unchanged.
-- Existing Worker URL, OAuth credentials and device pairing identifiers remain unchanged.
-- Legacy history and migration labels remain unchanged.
-- No cross-device synchronization is added; workout history stays in the existing device's browser storage.
-
-## Development status
-
-This is a **local review candidate for Stride 6.5.0**, built from the exact file contents of GitHub `main` at commit `ec48929e0aeeeb17a55b70061628ef2a83f0d387`, plus the previously approved 6.5 stabilization changes and the approved Stride brand assets. It is **not published**. The connected GitHub integration returned HTTP 403 when creating a branch; no remote branch or PR exists yet.
-
-All `Stride/` assets in the provided `Oivallus-brand-kit-v1(1).zip` were copied **byte-for-byte**. The S mark is used in the app header; the 180px icon is used for Apple touch, and 192/512px icons are used in the PWA manifest with `purpose: any`.
+- Preserve existing service worker, Worker URL, OAuth credentials, device pairing identifiers, history and legacy migration labels.
+- Workout history remains device-local. **No automatic cross-device synchronization is provided.**
+- Do not uninstall the existing iPhone PWA or clear browser/site storage to force a visual or icon refresh.
 
 ## Automated checks
+Run from repository root with Node.js 22+:
 
-Run from the project root with Node.js 22+:
-
-```bash
+```sh
 node --test tests/*.test.cjs
 node --check sw.js
-node -e "const fs=require('fs'); const s=fs.readFileSync('index.html','utf8'); const m=s.match(/<script type=\"module\">([\s\S]*?)<\/script>/); if(!m)throw Error('Missing module');fs.writeFileSync('/tmp/stride-module.mjs',m[1]);"
+node -e "const fs=require('fs');const s=fs.readFileSync('index.html','utf8');const m=s.match(/<script type=\"module\">([\s\S]*?)<\/script>/);if(!m)throw Error('Missing module');fs.writeFileSync('/tmp/stride-module.mjs',m[1]);"
 node --check /tmp/stride-module.mjs
 ```
 
-The automated suite checks state roundtrip, incomplete work sets, conservative progression, time budgets, PWA technical identity, brand asset references and offline service-worker behavior. **Automated tests do not replace the 24-case acceptance plan**, especially Garmin/Oura live sync and real iOS installed-PWA behavior.
+These checks do not replace on-device acceptance for iOS, live Garmin/Oura integration, data preservation, and offline use. For rules on coding and safe release, read `AGENTS.md`.
 
-## Safe PR workflow
+## Safe release workflow
+1. Verify the current `main` commit and open PRs; start a fresh feature branch for approved work.
+2. Preserve installed PWA identity and device-local storage; test all touched integrations and workflows.
+3. Create a **Draft PR** targeting `main` with test results, known limitations, data migration risks, and rollback instructions.
+4. On the current iPhone installation, privately export and verify a readable JSON backup before storage-risking changes; do not clear or uninstall the existing app.
+5. Verify current app data after update, offline startup, background/resume and Garmin/Oura pairing/duplicate imports.
+6. Merge and production deployment require separate user approval. Normally bundle changes into at most one stable release per week.
 
-1. Clone `Tilezzz/Gym` and verify `git rev-parse HEAD` equals `ec48929e0aeeeb17a55b70061628ef2a83f0d387`. If `main` moved, compare changes before applying anything.
-2. Create `feature/6.5-stabilization` from the verified commit; do not modify `main` directly.
-3. Apply the included `stride-6.5-review.patch` to that branch (`git apply --check ...` then `git apply ...`), or use the full source files supplied in this package after reviewing the diff.
-4. Run tests and inspect `git diff`. Do not include local backups, Worker tokens, OAuth secrets or user JSON history.
-5. Push only the feature branch and open a **draft PR**. Do not merge or publish without separate approval.
-
-## Mandatory iPhone / iPad acceptance
-
-1. From the **currently installed iPhone app**, export JSON and retain it privately. Verify that it is nonempty and readable. Do not uninstall the PWA or clear Safari/site data.
-2. On an isolated test environment, restore a disposable backup and compare history counts, completed sets, planned sessions and settings before/after the update.
-3. Check existing installed-app identity, home-screen icon/name behavior (iOS may keep old icon/name), offline launch, session continuation after backgrounding, and service-worker updates. Do not force an icon refresh by deleting the installed app.
-4. Verify Garmin and Oura connections remain paired; import the same activities twice and confirm no duplicates or overwritten manual strength sets.
-5. Review rollback: restore prior code and service worker without replacing any newer device-local workout data.
-
-**Release gate:** all P0 and P1 acceptance criteria passed, no data loss, separate explicit owner approval, and at most one stable release per week.
+**Source of truth:** GitHub for source, branches and PRs; product decisions belong to the Stride Product HQ; automated and on-device acceptance must be reported separately.
