@@ -11,3 +11,8 @@ Review: open preview, choose Päivän treenipäätös; confirm original day rema
 Risks: prototype copy and keyword routing must not be mistaken for validated coaching logic. All inputs are rendered as text. No real user data should be entered. No PWA identity, storage keys, history, APIs or production files change.
 
 Rollback: close/remove the isolated preview; no data migration or persistent state. This draft is not approved for merge or production publication.
+
+## Local engine integration
+Daily decisions now use src/coach/engine.mjs with four selectable synthetic check-ins. The engine proposes shortening to 20 minutes, not the previous hard-coded move. Symptoms or missing symptom information block proposals. Acceptance revalidates and rejects stale context. No actual application storage or backend integration. Other chat replies remain illustrative. Serve the repository root and open /previews/coach/ (ES modules require HTTP).
+
+Validation: 67/67 automated tests pass, including scenario decisions, stale/tampered acceptance and immutable state. iPhone PWA verification remains outstanding.
