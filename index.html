@@ -73,6 +73,12 @@
 /* Stride brand assets are deliberately separate from the legacy data identity. */
 .brand-icon{background:transparent;border:0;border-radius:0;display:grid;place-items:center}
 .brand-icon img{width:39px;height:39px;display:block}
+/* Preview and touch controls: no changes to storage or installed PWA identity. */
+.plan-preview{display:flex;flex-direction:column;align-items:flex-start;gap:5px;width:100%;text-align:left;background:none;border:0;color:var(--text,#eef4f3);padding:6px 0;min-height:48px;cursor:pointer}
+.preview-link{font-size:12px;color:#a5dfbd}.plan-preview:focus-visible{outline:2px solid #a5dfbd;outline-offset:4px;border-radius:4px}
+.event>div{min-width:0}.event .name{overflow-wrap:anywhere}.event .controls button,.btn.sm,.choice{min-height:44px;min-width:44px}
+.soft{font-size:13px;color:#b6c3c5}.history-row{align-items:flex-start}.history-row>strong,.history-row>.pill{flex-shrink:0}
+@media(max-width:480px){.event{grid-template-columns:42px minmax(0,1fr);gap:9px}.event .controls{grid-column:2;justify-content:flex-end}.card{padding:14px}.hero .headline{font-size:26px}.history-row{gap:8px}.row.between{flex-wrap:wrap}}
 </style>
   <title>Stride 6.5.0 — Adaptive Coach</title>
 </head>
@@ -304,12 +310,12 @@ function estimate(es, minutes, venue) {
     const warm = Math.min(10, minutes <= 30 ? 5 : 8);
     return Math.ceil(warm + es.reduce((sum, e) => sum + e.sets * (e.perSide ? 1.7 : 0.85) + Math.max(0, e.sets - 1) * e.rest / 60 + 1.25, 0));
 }
-function generate(state, kind, minutes, plan) {
+function generate(state, kind, minutes, plan, { adapt = true, date = today() } = {}) {
     const template = TEMPLATES[kind];
     if (!template)
         throw Error('Tuntematon harjoitus');
     minutes = clamp(Math.round(minutes), 20, 180);
-    const advice = recoveryAdvice(state), leg = recentLegLoad(state);
+    const advice = adapt ? recoveryAdvice(state, date) : { reduce: false, reasons: [] }, leg = adapt ? recentLegLoad(state, date) : { high: false };
     if (template.sport !== 'strength') {
         const quality = kind.endsWith('quality') && !plan?.locked && (advice.reduce || leg.high);
         const effective = quality ? (template.sport === 'run' ? 'run-easy' : 'cycle-easy') : kind;
@@ -347,10 +353,10 @@ function generate(state, kind, minutes, plan) {
     const estimatedMinutes = estimate(out, minutes, venue);
     return { title: template.title, kind, sport: 'strength', venue, timeBudget: minutes, estimatedMinutes, warmupMinutes: minutes <= 30 ? 5 : 8, exercises: out, segments: [], reason: reduce ? `Alavartolon volyymia kevennettiin: ${advice.reasons.join('; ') || leg.reason}. Pääliikkeiden tekniikka ja palautukset säilyvät.` : `Liikkeet valittiin ${template.focus.toLowerCase()} -tavoitteeseen. Ei supersettejä.`, rirTarget: reduce ? 3 : 2, reduced: reduce };
 }
-function startSession(state, kind, minutes, planId) {
+function startSession(state, kind, minutes, planId, preparedSession) {
     if (state.active)
         throw Error('Harjoitus on jo käynnissä');
-    const plan = state.plan.find(p => p.id === planId), session = generate(state, kind, minutes, plan);
+    const plan = state.plan.find(p => p.id === planId), session = preparedSession ?? generate(state, kind, minutes, plan);
     const sets = session.exercises.flatMap(e => {
         const suggested = progression(state, e).weight;
         const previous = lastSets(state, e.id);
@@ -765,7 +771,7 @@ return { importGarminJSON, importOuraJSON, importOuraWorkoutJSON };
 
 // main.js
 const { ACTIVITIES, EXERCISES, TEMPLATES } = __catalog;
-const { addActivity, coachRecommendation, exerciseHistory, finishSession, formatDuration, generate, getRecovery, initial, makeWeek, recordRecovery, progression, recoveryAdvice, startSession, swapPlan, weekStats } = __engine;
+const { addActivity, coachEvidence, coachRecommendation, exerciseHistory, finishSession, formatDuration, generate, getRecovery, initial, makeWeek, recordRecovery, progression, recoveryAdvice, startSession, swapPlan, weekStats } = __engine;
 const { csvExport, download, filenameDate, importBackup, load, save } = __store;
 const { importGarminJSON, importOuraJSON, importOuraWorkoutJSON } = __external;
 const { addDays, clamp, fiDate, monday, num, today, uid } = __types;
@@ -829,17 +835,18 @@ function ensureTrainingWeeks(){
 ensureTrainingWeeks();
 let tab = 'today';
 let activeModal = '';
+let previewPlanId = '', previewReturnTab = 'plan', customWorkout = false;
 let editPlanId = '';
 let feedbackActivityId = '';
 let planWeek = monday(today()), selectedKind = 'gym-full-a', selectedMinutes = 45, chartExercise = 'bench', notice = '';
 let restUntil = Number(state.active?.restUntil || 0);
 let workoutLibraryOpen = false;
-let coachBudget = null; // null = planned duration; never carry yesterday's time budget into today
+let coachBudget = null;
 let swapOpen = false, swapSearch = '';
 const el = () => document.querySelector('#app');
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmt = (v, decimal = 0) => Number(v || 0).toLocaleString('fi-FI', { maximumFractionDigits: decimal, minimumFractionDigits: decimal });
-const minutesInput = (v) => [20, 30, 45, 60, 75, 90].map(n => `<button class="choice ${n === v ? 'on' : ''}" data-action="minutes" data-minutes="${n}">${n} min</button>`).join('');
+const minutesInput = (v) => [...new Set([20, 30, 45, 60, 75, 90, v])].sort((a,b)=>a-b).map(n => `<button class="choice ${n === v ? 'on' : ''}" data-action="minutes" data-minutes="${n}">${n} min</button>`).join('');
 const pill = (s, theme = '') => `<span class="pill ${theme}">${esc(s)}</span>`;
 const sportType = (s) => s === 'strength' ? 'STRENGTH' : s === 'run' ? 'RUNNING' : s === 'cycle' ? 'CYCLING' : s.toUpperCase();
 const activityTitle = (a) => ACTIVITIES[a.sport] || a.sport;
@@ -1031,12 +1038,10 @@ function flash(msg) { const t = document.getElementById('toast'); if (!t)
     return; t.textContent = msg; t.hidden = false; setTimeout(() => { t.hidden = true; }, 3000); }
 const dayName = (day) => new Date(`${day}T12:00:00`).toLocaleDateString('fi-FI', { weekday: 'short' }).replace('.', '').toUpperCase();
 const dayNum = (day) => day.slice(8);
-function nav() { const items = [['today', '⌁', 'Today'], ['plan', '▦', 'Plan'], ['train', '✚', 'Train'], ['analyze', '▥', 'Analyze'], ['settings', '⚙', 'Settings']]; return `<nav class="nav" aria-label="Päävalikko"><div class="nav-inner">${items.map(([k, icon, label]) => `<button data-action="tab" data-tab="${k}" class="${tab === k ? 'active' : ''}" aria-current="${tab === k ? 'page' : 'false'}"><span class="symbol">${icon}</span><span>${label}</span></button>`).join('')}</div></nav>`; }
+function nav() { const items = [['today', '⌁', 'Tänään'], ['plan', '▦', 'Ohjelma'], ['train', '✚', 'Treeni'], ['analyze', '▥', 'Kehitys'], ['settings', '⚙', 'Asetukset']]; return `<nav class="nav" aria-label="Päävalikko"><div class="nav-inner">${items.map(([k, icon, label]) => `<button data-action="tab" data-tab="${k}" class="${tab === k ? 'active' : ''}" aria-current="${tab === k ? 'page' : 'false'}"><span class="symbol">${icon}</span><span>${label}</span></button>`).join('')}</div></nav>`; }
 function header() { return `<header class="top"><div class="brand"><div class="brand-icon"><img src="symbol.svg" alt="" width="39" height="39"></div><div><strong>STRIDE</strong><span>HYBRID TRAINING SYSTEM · 6.5.0</span></div></div><div class="top-right"><div class="meta-date">${esc(new Date().toLocaleDateString('fi-FI', { day: 'numeric', month: 'short' }))}<br><span style="color:#cdd6d6">${esc(new Date().toLocaleDateString('fi-FI', { weekday: 'long' }))}</span></div><div class="avatar">HYB</div></div></header>`; }
 function coachSessionProposal(plan,insight,budget){
-  if(!plan)return null;
-  const originalKind=plan.kind;
-  let kind=originalKind,minutes=Math.min(plan.duration,budget),reason='';
+  let kind=plan.kind,minutes=Math.min(plan.duration,budget),reason='';
   if(!plan.locked&&insight.level==='adjust'){
     minutes=Math.min(minutes,30);
     if(plan.sport==='run'&&(kind==='run-long'||kind==='run-quality'))kind='run-easy';
@@ -1047,20 +1052,80 @@ function coachSessionProposal(plan,insight,budget){
   }else if(minutes<plan.duration){
     reason=plan.locked?'Lukittu suunnitelma pysyy muuttumattomana; valitsemasi aika koskee vain tätä toteutusta.':'Aikabudjetin vuoksi lyhennetty verrattuna alkuperäiseen suunnitelmaan.';
   }
-  return {kind,minutes,title:TEMPLATES[kind]?.title||plan.title,reason,
-    modified:kind!==originalKind||minutes!==plan.duration,
-    intensity:kind==='run-easy'?'Kevyt Z1–matala Z2, keskusteluvauhti.':
-      kind==='cycle-easy'?'Kevyt Z1–matala Z2.':
-      plan.sport==='strength'&&insight.level==='adjust'&&!plan.locked?'Väljennä sarjakuormaa ja pidä noin 3 toistoa varastossa.':''};
+  return {kind,minutes,reason};
+}
+function budgetForDay(day) {
+    return coachBudget?.day === day ? coachBudget.minutes : null;
+}
+function plannedPreview(p, day = today(), insight) {
+    const isToday = p.date === day && p.status === 'planned';
+    const requested = isToday
+        ? coachSessionProposal(p, insight ?? coachEvidence(state, day), budgetForDay(day) ?? p.duration)
+        : null;
+    const session = generate(state, requested?.kind ?? p.kind, requested?.minutes ?? p.duration, p, { adapt: isToday, date: day });
+    const proposal = isToday ? {
+        kind: session.kind, minutes: session.timeBudget, title: session.title,
+        modified: session.kind !== p.kind || session.timeBudget !== p.duration || session.reduced,
+        reason: [requested.reason, session.reduced ? session.reason : ''].filter(Boolean).join(' '),
+        intensity: session.kind === 'run-easy' ? 'Kevyt Z1–matala Z2, keskusteluvauhti.'
+          : session.kind === 'cycle-easy' ? 'Kevyt Z1–matala Z2.'
+          : session.sport === 'strength' && session.rirTarget === 3 ? 'Väljennä sarjakuormaa ja pidä noin 3 toistoa varastossa.' : ''
+    } : null;
+    return { day, plan: p, session, proposal, isToday };
+}
+function trainSelection(day = today(), recommendation = coachRecommendation(state, day)) {
+    const p = recommendation.plan;
+    if (!customWorkout && p?.date === day && p.status === 'planned') {
+        const { session } = plannedPreview(p, day, recommendation.coach);
+        return { day, plan: p, session, kind: session.kind, minutes: session.timeBudget };
+    }
+    const session = generate(state, selectedKind, selectedMinutes, undefined, { date: day });
+    return { day, plan: null, session, kind: session.kind, minutes: session.timeBudget };
+}
+function workoutSelectionKey({ day, plan, session }) {
+    return JSON.stringify([day, plan?.id ?? null, plan?.kind ?? null, plan?.duration ?? null, session]);
+}
+function startDisplayedWorkout(expected, choice) {
+    if (!choice || workoutSelectionKey(choice) !== expected) {
+        render();
+        notify('Harjoitusvalinta muuttui. Tarkista harjoitus ja vahvista aloitus uudelleen.');
+        return;
+    }
+    if (getRecovery(state, choice.day)?.pain)
+        return alert('Arvioi ensin kipu- tai sairausoire.');
+    return start(choice);
+}
+function sessionDetails(session) {
+    return session.sport === 'strength'
+      ? session.exercises.map((e,i) => `<div class="history-row"><div><div class="date">${i+1} · ${esc(e.group)}</div><b>${esc(e.name)}</b><p>${e.sets} × ${e.min}–${e.max} · lepo ${e.rest} s · RIR ${session.rirTarget}</p><p>${esc(progression(state,e).reason)}</p></div><span class="pill">${progression(state,e).weight ?? '—'} kg</span></div>`).join('')
+      : session.segments.map((part,i) => `<div class="history-row"><div><div class="date">OSIO ${i+1}</div><b>${esc(part.title)}</b><p>${esc(part.effort)}</p></div><strong>${part.minutes} min</strong></div>`).join('');
+}
+function previewView() {
+    const p = state.plan.find(x => x.id === previewPlanId);
+    if (!p) return `<h1>Harjoitusta ei löytynyt</h1><button class="btn" data-action="close-preview">Takaisin</button>`;
+    const choice = plannedPreview(p);
+    const { session, proposal, isToday } = choice;
+    return `<button class="btn ghost" data-action="close-preview">← Takaisin</button>
+      <div class="eyebrow mt">HARJOITUKSEN ESIKATSELU · ${esc(fiDate(p.date))}</div><h1 class="mt">${esc(session.title)}</h1>
+      <p class="lead">${esc(TEMPLATES[session.kind].focus)}</p>
+      <div class="badge-line">${pill(ACTIVITIES[p.sport])}${pill(session.estimatedMinutes+' min')}${p.locked ? pill('Lukittu') : ''}</div>
+      <section class="card"><h2>Suunnitelma ja perustelu</h2><p class="soft mt">Suunniteltu: ${esc(p.title)} · ${p.duration} min.</p>
+      <p class="soft mt">${isToday ? esc(proposal?.reason || session.reason) : 'Suunnitelman tämänhetkinen sisältö. Päivän palautuminen ja siihen mennessä kertyneet suoritukset voivat vielä tarkentaa harjoitusta. Painoehdotukset perustuvat nykyiseen historiaan.'}</p>
+      ${p.status !== 'planned' ? '<p class="soft mt">Tämä on suunnitelman esikatselu. Toteutunut harjoitus löytyy historiasta.</p>' : ''}</section>
+      <section class="card mt"><h2>Harjoituksen sisältö</h2>${session.sport === 'strength' ? `<p class="soft mt">Alkulämmittely noin ${session.warmupMinutes} min.</p>` : ''}${sessionDetails(session)}</section>
+      <p class="soft mt">Esikatselu ei käynnistä harjoitusta eikä muuta tallennettuja tietoja.</p>
+      ${isToday && !state.active ? `<button class="btn primary block mt" data-action="start-plan" data-id="${esc(p.id)}" data-workout="${esc(workoutSelectionKey(choice))}" ${getRecovery(state, choice.day)?.pain ? 'disabled' : ''}>Aloita päivän harjoitus →</button>` : ''}`;
 }
 function todayView() {
-    const stat = weekStats(state), co=coachRecommendation(state), r=getRecovery(state), plan=co.plan, advice=recoveryAdvice(state);
+    const day = today();
+    const stat = weekStats(state), co=coachRecommendation(state, day), r=getRecovery(state, day), plan=co.plan, advice=recoveryAdvice(state, day);
     const recent=state.activities.slice().sort((a,b)=>b.startedAt.localeCompare(a.startedAt)).slice(0,4);
     const summary=activitySummary(state),trend=recoveryContext(state),insight=co.coach;
-    const isToday=!!plan&&plan.date===today();
-    const budget=coachBudget ?? plan?.duration ?? 45;
-    const proposal=isToday?coachSessionProposal(plan,insight,budget):null;
-    const canStart=isToday&&!insight.pain;
+    const isToday=!!plan&&plan.date===day;
+    const budget=budgetForDay(day) ?? plan?.duration ?? 45;
+    const choice=isToday?plannedPreview(plan, day, insight):null;
+    const proposal=choice?.proposal;
+    const canStart=isToday&&!insight.pain&&!state.active;
     const quickChoices=[...new Set([20,30,45,60,plan?.duration].filter(n=>Number.isFinite(n)&&n>=20&&n<=180))].sort((a,b)=>a-b).map(n=>`<button class="choice ${budget===n?'on':''}" data-action="coach-budget" data-minutes="${n}">${n} min</button>`).join('');
     return `<div class="eyebrow">TRAINING INTELLIGENCE / TODAY · 6.5.0</div><h1 style="margin-top:8px">Hybridi ilman kompromisseja.</h1><p class="lead">Adaptive Coach huomioi palautumisen, harjoittelun ja ajan. Lopullinen päätös on sinulla.</p>
  <section class="card hero mt"><div class="row between"><span class="eyebrow">${isToday?'PÄIVÄN HARJOITUSEHDOTUS':'TÄNÄÄN · EI SUUNNITELTUA HARJOITUSTA'}</span>${isToday?pill(plan.priority==='key'?'KEY SESSION':'ADAPTIVE','green'):pill('PALAUTUMINEN / VAPAA PÄIVÄ')}</div>
@@ -1076,12 +1141,12 @@ function todayView() {
    ${proposal.reason?`<div class="explain mt">${esc(proposal.reason)} ${esc(proposal.intensity)}</div>`:`${proposal.intensity?`<p class="soft mt">${esc(proposal.intensity)}</p>`:''}`}
    ${co.warning?`<p class="soft mt">${esc(co.warning)}</p>`:''}
    <div class="section-label mt">KÄYTETTÄVISSÄ · ${budget} MIN</div><div class="choice-row coach-budgets">${quickChoices}</div><div class="field mt"><label for="coach-custom-minutes">Muu kesto (20–180 min)</label><input id="coach-custom-minutes" type="number" inputmode="numeric" min="20" max="180" step="1" value="${budget}"></div>
-   <div class="btn-row mt"><button class="btn primary" ${!canStart?'disabled':''} data-action="start-plan" data-id="${esc(plan.id)}" data-coach="1" data-kind="${esc(proposal.kind)}" data-minutes="${proposal.minutes}">${proposal.modified?'Aloita mukautettu harjoitus':'Aloita päivän harjoitus'} →</button><button class="btn ghost" data-action="tab" data-tab="train">Valitse muu harjoitus</button></div>`:
+   <div class="btn-row mt"><button class="btn ghost" data-action="preview-plan" data-id="${esc(plan.id)}">Näytä sisältö</button><button class="btn primary" ${!canStart?'disabled':''} data-action="start-plan" data-id="${esc(plan.id)}" data-workout="${esc(workoutSelectionKey(choice))}">${proposal.modified?'Aloita mukautettu harjoitus':'Aloita päivän harjoitus'} →</button><button class="btn ghost" data-action="choose-other">Valitse muu harjoitus</button></div>`:
    `<p class="soft mt">${plan?'Seuraava suunniteltu: '+fiDate(plan.date)+' · '+esc(plan.title)+' · '+formatDuration(plan.duration)+'.':'Tulevia harjoituksia ei vielä ole.'} ${insight.level==='adjust'?'Vire puoltaa kevyttä päivää.':'Levolle ei tarvitse keksiä korvaavaa treeniä.'} Seuraavan päivän ohjelmaa ei aloiteta eikä merkitä tehdyksi automaattisesti.</p>
    <div class="btn-row mt"><button class="btn primary" data-action="tab" data-tab="train">Valitse tämän päivän harjoitus →</button><button class="btn ghost" data-action="tab" data-tab="plan">Näytä suunnitelma</button></div>`}
  <p class="micro mt">${esc(co.balance.text)} Lajin vaihto ja suurten volyymien muutokset vaativat hyväksyntäsi.</p></section>
  ${bp('VIIMEISET 7 PÄIVÄÄ')}<div class="kpis"><div class="kpi"><div class="tag">VOIMAHARJOITUKSET</div><div class="value green">${stat.strength}</div><div class="unit">${stat.sets} työsarjaa</div></div><div class="kpi"><div class="tag">JUOKSU</div><div class="value">${fmt(stat.runKm, 1)}</div><div class="unit">km · ${stat.runMinutes} min</div></div><div class="kpi"><div class="tag">MUU KESTÄVYYS</div><div class="value blue">${Math.max(0,summary.minutes.endurance-stat.runMinutes)}</div><div class="unit">min · pyöräily, vaellus, hiihto</div></div></div>
- <div class="title-row"><h2>Recovery context</h2>${pill(r && r.date === today() ? 'CHECK-IN DONE' : 'NO CHECK-IN', r && r.date === today() ? 'green' : '')}</div>
+ <div class="title-row"><h2>Palautuminen</h2>${pill(r && r.date === today() ? 'CHECK-IN DONE' : 'NO CHECK-IN', r && r.date === today() ? 'green' : '')}</div>
  <section class="card"><div class="split"><div><label>OMA VIRE</label><div class="kpi value" style="border:0;padding:4px 0;background:transparent;min-height:0">${r && r.date === today() ? r.energy > 0 ? `${r.energy}/5` : "—" : '—'}</div></div><div><label>JALKOJEN TUNTEMUS</label><div class="kpi value" style="border:0;padding:4px 0;background:transparent;min-height:0">${r && r.date === today() ? `${r.legs}/3` : '—'}</div></div></div>
  <div class="divider"></div><p class="soft">${advice.reduce ? 'Oma vire ja kuormitus puoltaa kevennystä.' : 'Yksittäinen mittaus ei päätä harjoittelusta.'} ${esc(trend?.description||'Oura-tietoja arvioidaan vasta riittävän vertailuhistorian jälkeen.')} <span class="source-chip">${esc(autoSyncEnabled?'Automaattinen synkronointi käytössä':'Automaattinen synkronointi pois')}</span></p><div class="btn-row mt">${btn('recovery', 'Päivän check-in', 'primary')}${btn('activity', '+ Satunnainen treeni', 'ghost')}</div></section>
  <div class="title-row"><h2>Tulevat harjoitukset</h2><button class="btn sm ghost" data-action="tab" data-tab="plan">Koko suunnitelma →</button></div>
@@ -1089,7 +1154,7 @@ function todayView() {
  <div class="title-row"><h2>Viimeisimmät suoritukset</h2><span class="soft">${state.activities.length} yhteensä</span></div><section class="card">${recent.length ? recent.map(activityRow).join('') : '<div class="empty">Ei vielä harjoituksia. Aloita ensimmäinen harjoituksesi.</div>'}</section>
  `;
 }
-function planEvent(p) { return `<div class="event ${['done','adjusted'].includes(p.status) ? 'complete' : ''}"><div class="day"><b>${dayNum(p.date)}</b><small>${dayName(p.date)}</small></div><div><div class="type ${p.sport === 'run' || p.sport === 'cycle' ? 'endurance' : ''}">${sportType(p.sport)} · ${p.priority.toUpperCase()} ${p.locked ? '· LOCKED' : ''}</div><div class="name">${esc(p.title)}</div><div class="detail">${p.duration} min · ${p.status === 'done' ? 'Valmis' : p.status === 'adjusted' ? 'Mukautettu: '+(p.actualDuration||'?')+' / '+p.duration+' min · '+(TEMPLATES[p.actualKind]?.title||'Kevennetty') : p.status === 'skipped' ? 'Ohitettu' : p.adjustment ? 'Kevennetty suunnitelma' : 'Suunniteltu'}</div></div><div class="controls"><button class="btn sm ghost" data-action="edit-plan" data-id="${esc(p.id)}" aria-label="Muokkaa ${esc(p.title)}">✎</button><button class="btn sm ${p.locked ? 'primary' : 'ghost'}" data-action="lock-plan" data-id="${esc(p.id)}" aria-label="Lukitse harjoitus">${p.locked ? '◆' : '◇'}</button></div></div>`; }
+function planEvent(p) { return `<div class="event ${['done','adjusted'].includes(p.status) ? 'complete' : ''}"><div class="day"><b>${dayNum(p.date)}</b><small>${dayName(p.date)}</small></div><div><div class="type ${p.sport === 'run' || p.sport === 'cycle' ? 'endurance' : ''}">${sportType(p.sport)} · ${p.priority.toUpperCase()} ${p.locked ? '· LOCKED' : ''}</div><button class="plan-preview" data-action="preview-plan" data-id="${esc(p.id)}" aria-label="Näytä harjoitus: ${esc(p.title)}"><span class="name">${esc(p.title)}</span><span class="preview-link">Näytä harjoitus →</span></button><div class="detail">${p.duration} min · ${p.status === 'done' ? 'Valmis' : p.status === 'adjusted' ? 'Mukautettu: '+(p.actualDuration||'?')+' / '+p.duration+' min · '+(TEMPLATES[p.actualKind]?.title||'Kevennetty') : p.status === 'skipped' ? 'Ohitettu' : p.adjustment ? 'Kevennetty suunnitelma' : 'Suunniteltu'}</div></div><div class="controls"><button class="btn sm ghost" data-action="edit-plan" data-id="${esc(p.id)}" aria-label="Muokkaa ${esc(p.title)}">✎</button><button class="btn sm ${p.locked ? 'primary' : 'ghost'}" data-action="lock-plan" data-id="${esc(p.id)}" aria-label="Lukitse harjoitus">${p.locked ? '◆' : '◇'}</button></div></div>`; }
 function activityRow(a) { return `<div class="history-row"><div><div class="date">${fiDate(a.date)} · ${esc(a.source === 'legacy' ? 'OLD DATA' : a.source.toUpperCase())}</div><b>${esc(displayActivityTitle(a))}</b><p>${a.duration} min${a.distanceKm ? ' · ' + fmt(a.distanceKm, 1) + ' km' : ''}${a.sessionRpe ? ' · sRPE ' + a.sessionRpe : ''}${a.sets.length ? ' · ' + a.sets.length + ' sarjaa' : ''}</p></div>${pill(categoryName(a), '')}</div>`; }
 function planView() {
     const upcomingEnd=addDays(planWeek,6);
@@ -1099,35 +1164,33 @@ function planView() {
     const weekEnd = addDays(planWeek, 6);
     const arr = state.plan.filter(p => p.date >= planWeek && p.date <= weekEnd).sort((a, b) => a.date.localeCompare(b.date));
     const done = arr.filter(p => ['done','adjusted'].includes(p.status)).length;
-    return `<div class="eyebrow">ADAPTIVE PLANNING</div><h1 class="mt">Training Plan</h1><p class="lead">Key Session ensin. Lukitut harjoitukset säilyvät, eikä väliin jääneitä treenejä siirretä automaattisesti kuormittamaan seuraavia päiviä.</p>
- <section class="card mt"><div class="row between"><button class="btn sm ghost" data-action="prev-week">← Edellinen</button><strong>${fiDate(planWeek)} – ${fiDate(weekEnd)}</strong><button class="btn sm ghost" data-action="next-week">Seuraava →</button></div><div class="badge-line">${pill(`${done}/${arr.length} toteutunut`, 'green')}${pill(state.profile.capacity.toUpperCase())}</div><div class="divider"></div><div class="events">${arr.map(p => `<div>${planEvent(p)}<div class="btn-row mt" style="justify-content:flex-end">${p.status === 'planned' ? `${btn('start-plan', 'Aloita', 'primary', `data-id="${esc(p.id)}"`)}${btn('skip-plan', 'Ohita', 'ghost', `data-id="${esc(p.id)}"`)}` : ''}</div></div>`).join('')}</div></section>
+    return `<div class="eyebrow">ADAPTIVE PLANNING</div><h1 class="mt">Viikkosuunnitelma</h1><p class="lead">Key Session ensin. Lukitut harjoitukset säilyvät, eikä väliin jääneitä treenejä siirretä automaattisesti kuormittamaan seuraavia päiviä.</p>
+ <section class="card mt"><div class="row between"><button class="btn sm ghost" data-action="prev-week">← Edellinen</button><strong>${fiDate(planWeek)} – ${fiDate(weekEnd)}</strong><button class="btn sm ghost" data-action="next-week">Seuraava →</button></div><div class="badge-line">${pill(`${done}/${arr.length} toteutunut`, 'green')}${pill(state.profile.capacity.toUpperCase())}</div><div class="divider"></div><div class="events">${arr.map(p => `<div>${planEvent(p)}<div class="btn-row mt" style="justify-content:flex-end">${p.status === 'planned' ? `${btn('preview-plan', 'Näytä sisältö', 'primary', `data-id="${esc(p.id)}"`)}${btn('start-plan', 'Aloita', 'ghost', `data-id="${esc(p.id)}" ${p.date === today() ? 'data-coach="1"' : ''}`)}${btn('skip-plan', 'Ohita', 'ghost', `data-id="${esc(p.id)}"`)}` : ''}</div></div>`).join('')}</div></section>
  <div class="title-row"><h2>Viikon kapasiteetti</h2>${pill('SUSTAINABLE')}</div><section class="card"><p class="soft">Ohjelma voi painottua 4, 5 tai 6–7 harjoitukseen. Harjoitusmäärän merkittävä lisäys vaatii hyväksyntäsi.</p><div class="choice-row mt">${[['minimum', 'Minimum · 4'], ['balanced', 'Balanced · 5'], ['performance', 'Performance · 6–7']].map(([k, l]) => `<button class="choice ${state.profile.capacity === k ? 'on' : ''}" data-action="capacity" data-value="${k}">${l}</button>`).join('')}</div><p class="micro mt">Kapasiteetin valinta koskee uutta viikkosuunnitelmaa. Ohjelma ei kasva automaattisesti vain siksi, että aikaa olisi enemmän.</p><div class="btn-row mt">${btn('rebuild-plan', 'Luo viikko uudelleen', 'primary')}${btn('activity', 'Kirjaa muu liikunta')}</div></section>
- <div class="title-row"><h2>Coach change log</h2></div><section class="card">${state.changes.slice(0, 10).map(c => `<div class="history-row"><div><div class="date">${new Date(c.date).toLocaleDateString('fi-FI')} · ${c.type.toUpperCase()}</div><b>${esc(c.message)}</b><p>${esc(c.reason)}</p></div></div>`).join('') || '<div class="empty">Muutoksia ei ole vielä tehty.</div>'}</section>`;
+ <div class="title-row"><h2>Ohjelman muutokset</h2></div><section class="card">${state.changes.slice(0, 10).map(c => `<div class="history-row"><div><div class="date">${new Date(c.date).toLocaleDateString('fi-FI')} · ${c.type.toUpperCase()}</div><b>${esc(c.message)}</b><p>${esc(c.reason)}</p></div></div>`).join('') || '<div class="empty">Muutoksia ei ole vielä tehty.</div>'}</section>`;
 }
 function kindsBySport() { return [['VOIMA / SALI', ['gym-full-a', 'gym-full-b', 'gym-upper', 'gym-lower', 'gym-push', 'gym-pull']], ['KOTONA / KAHVAKUULA', ['home-full', 'home-upper', 'home-lower']], ['RUNNING', ['run-easy', 'run-quality', 'run-long']], ['CYCLING', ['cycle-easy', 'cycle-quality', 'cycle-long']]]; }
 function trainView() {
     if (state.active) return activeView();
-    const t=TEMPLATES[selectedKind], preview=generate(state, selectedKind, selectedMinutes);
-    const co=coachRecommendation(state), planned=co.plan;
-    const pain=!!getRecovery(state)?.pain;
-    const details=preview.sport==='strength'
-      ? preview.exercises.map((e,i)=>`<div class="history-row"><div><div class="date">${String(i+1).padStart(2,'0')} · ${esc(e.group.toUpperCase())}</div><b>${esc(e.name)}</b><p>${e.sets} × ${e.min}–${e.max} · lepo ${e.rest} s</p></div><div class="right"><span class="pill">${progression(state,e).weight ?? '—'} kg</span></div></div>`).join('')
-      : preview.segments.map(s=>`<div class="history-row"><div><b>${esc(s.title)}</b><p>${esc(s.effort)}</p></div><strong>${s.minutes} min</strong></div>`).join('');
-    const types=kindsBySport().map(([name,ids])=>`<div class="section-label">${esc(name)}</div><div class="choice-row">${ids.map(k=>`<button class="choice ${selectedKind===k?'on':''}" data-action="choose-kind" data-kind="${k}">${esc(TEMPLATES[k].title)}</button>`).join('')}</div>`).join('');
-    return `<div class="eyebrow">IPHONE QUICK TRAIN / 6.3</div><h1 class="mt">Train</h1><p class="lead">Aloita nopeasti. Muuta aikaa tai lajia vain tarvittaessa.</p>
+    const day = today(), co = coachRecommendation(state, day), planned = co.plan;
+    const choice=trainSelection(day, co), preview=choice.session, t=TEMPLATES[choice.kind];
+    const pain=!!getRecovery(state, day)?.pain;
+    const details=sessionDetails(preview);
+    const types=kindsBySport().map(([name,ids])=>`<div class="section-label">${esc(name)}</div><div class="choice-row">${ids.map(k=>`<button class="choice ${choice.kind===k?'on':''}" data-action="choose-kind" data-kind="${k}">${esc(TEMPLATES[k].title)}</button>`).join('')}</div>`).join('');
+    return `<div class="eyebrow">HARJOITTELU</div><h1 class="mt">Treeni</h1><p class="lead">Aloita nopeasti. Muuta aikaa tai lajia vain tarvittaessa.</p>
       <section class="card train-quick mt">
-        <div class="row between"><span class="eyebrow">VALITTU HARJOITUS</span>${pill(`${preview.estimatedMinutes} min`,preview.reduced?'warn':'green')}</div>
+        <div class="row between"><span class="eyebrow">${choice.plan ? 'PÄIVÄN HARJOITUS' : 'OMA HARJOITUSVALINTA'}</span>${pill(`${preview.estimatedMinutes} min`,preview.reduced?'warn':'green')}</div>
         <h2 class="quick-title">${esc(preview.title)}</h2>
         <p class="soft">${esc(t.focus)}</p>
-        <div class="section-label">AIKAA KÄYTETTÄVISSÄ</div><div class="choice-row">${minutesInput(selectedMinutes)}</div>
+        <div class="section-label">AIKAA KÄYTETTÄVISSÄ</div><div class="choice-row">${minutesInput(choice.plan ? (budgetForDay(day) ?? choice.plan.duration) : selectedMinutes)}</div>
         ${pain?'<div class="warning mt">Kipu- tai sairausoire on kirjattu. Arvioi harjoittelu ennen aloittamista.</div>':''}
-        <button class="btn primary block quick-start" data-action="start-selected" ${pain?'disabled':''}>Aloita ${esc(preview.title)} →</button>
+        <button class="btn primary block quick-start" data-action="start-selected" data-workout="${esc(workoutSelectionKey(choice))}" ${pain?'disabled':''}>Aloita ${esc(preview.title)} →</button>
         <p class="soft mt">${esc(preview.reason)}</p>
       </section>
-      ${planned ? `<section class="card mt"><div class="row between"><strong>Seuraava suunnitelmassa</strong>${pill(fiDate(planned.date))}</div><p class="soft mt">${esc(planned.title)} · ${planned.duration} min</p><button class="btn ghost block mt" data-action="start-plan" data-id="${esc(planned.id)}" ${pain?'disabled':''}>Aloita suunniteltu harjoitus →</button></section>`:''}
+      ${planned && !choice.plan ? `<section class="card mt"><div class="row between"><strong>Seuraava suunnitelmassa</strong>${pill(fiDate(planned.date))}</div><p class="soft mt">${esc(planned.title)} · ${planned.duration} min</p><button class="btn ghost block mt" data-action="preview-plan" data-id="${esc(planned.id)}">Näytä suunniteltu harjoitus →</button></section>`:''}
       <button class="btn ghost block mt library-toggle" data-action="library-toggle" aria-expanded="${workoutLibraryOpen}">${workoutLibraryOpen?'Piilota harjoituskirjasto −':'Vaihda lajia tai harjoitusta +'} </button>
-      ${workoutLibraryOpen?`<section class="card mt"><div class="section-label">WORKOUT LIBRARY</div>${types}</section>`:''}
-      <details class="card mt train-details"><summary>Harjoituksen sisältö · ${preview.sport==='strength'?preview.exercises.reduce((s,e)=>s+e.sets,0)+' työsarjaa':preview.segments.length+' osiota'}</summary><div class="mt">${details}</div></details>
+      ${workoutLibraryOpen?`<section class="card mt"><div class="section-label">HARJOITUSKIRJASTO</div>${types}</section>`:''}
+      <details open class="card mt train-details"><summary>Harjoituksen sisältö · ${preview.sport==='strength'?preview.exercises.reduce((s,e)=>s+e.sets,0)+' työsarjaa':preview.segments.length+' osiota'}</summary><div class="mt">${details}</div></details>
       <button class="btn ghost block mt" data-action="activity">Kirjaa satunnainen liikunta</button>`;
 }
 function swapCandidates(current) {
@@ -1266,15 +1329,16 @@ function modalView() {
         return '';
     return `<div class="modal-backdrop"><section class="card modal" role="dialog" aria-modal="true" aria-label="Muokkaa suunnitelmaa"><div class="row between"><h2>Muokkaa harjoitusta</h2><button class="btn sm ghost" data-action="close">Sulje ✕</button></div><form id="plan-form"><div class="field"><label>Harjoitus</label><select name="kind">${Object.entries(TEMPLATES).map(([k, t]) => `<option value="${k}" ${p.kind === k ? 'selected' : ''}>${esc(t.title)} · ${ACTIVITIES[t.sport]}</option>`).join('')}</select></div><div class="split"><div class="field"><label>Päivä</label><input type="date" name="date" value="${p.date}" required></div><div class="field"><label>Aika · min</label><input type="number" name="duration" min="20" max="240" value="${p.duration}" required></div></div><p class="soft">Harjoittelulajin vaihtaminen vaatii aina erillisen vahvistuksen. Lukitun harjoituksen saa muuttaa vain itse.</p><button class="btn primary block mt" type="submit">Tallenna muutos</button></form></section></div>`;
 }
-function render() { const body = tab === 'today' ? todayView() : tab === 'plan' ? planView() : tab === 'train' ? trainView() : tab === 'analyze' ? analyzeView() : settingsView(); const warning = saveFailed ? `<section class="save-warning" role="alert"><strong>Tallennus epäonnistui.</strong> Viimeisimmät muutokset ovat vain tämän istunnon muistissa. Älä sulje sovellusta. <button class="btn sm" data-action="export">Vie JSON-varmuuskopio</button></section>` : ''; el().innerHTML = header() + warning + `<main>${body}</main>` + nav() + modalView(); updateTimer(); }
+function render() { const body = previewPlanId ? previewView() : tab === 'today' ? todayView() : tab === 'plan' ? planView() : tab === 'train' ? trainView() : tab === 'analyze' ? analyzeView() : settingsView(); const warning = saveFailed ? `<section class="save-warning" role="alert"><strong>Tallennus epäonnistui.</strong> Viimeisimmät muutokset ovat vain tämän istunnon muistissa. Älä sulje sovellusta. <button class="btn sm" data-action="export">Vie JSON-varmuuskopio</button></section>` : ''; el().innerHTML = header() + warning + `<main>${body}</main>` + nav() + modalView(); updateTimer(); }
 function changeTab(target) { if (!['today', 'plan', 'train', 'analyze', 'settings'].includes(target))
-    return; tab = target; activeModal = ''; window.scrollTo({ top: 0, behavior: 'auto' }); render(); }
+    return; tab = target; previewPlanId = ''; customWorkout = false; activeModal = ''; window.scrollTo({ top: 0, behavior: 'auto' }); render(); }
 function notify(msg) { flash(msg); }
 function openModal(s) { activeModal = s; render(); }
-function start(kind, minutes, planId) { try {
-    startSession(state, kind, minutes, planId);
+function start({ session, plan }) { try {
+    startSession(state, session.kind, session.timeBudget, plan?.id, session);
     restUntil=0;
     tab = 'train';
+    previewPlanId = '';
     activeModal = '';
     commit();
     window.scrollTo(0, 0);
@@ -1342,6 +1406,19 @@ window.addEventListener('click', (evt) => {
     const action = b.dataset.action || '';
     const id = b.dataset.id || '';
     const value = b.dataset.value || '';
+    if (action === 'preview-plan') {
+        if (!state.plan.some(p => p.id === id)) return;
+        previewReturnTab = tab; previewPlanId = id; activeModal = '';
+        render(); window.scrollTo(0,0); document.querySelector('[data-action="close-preview"]')?.focus(); return;
+    }
+    if (action === 'close-preview') {
+        const previousId = previewPlanId;
+        previewPlanId = ''; tab = previewReturnTab; render();
+        Array.from(document.querySelectorAll('[data-action="preview-plan"]')).find(el => el.dataset.id === previousId)?.focus(); return;
+    }
+    if (action === 'choose-other') {
+        tab = 'train'; customWorkout = true; workoutLibraryOpen = true; previewPlanId = ''; render(); window.scrollTo(0,0); return;
+    }
     if (action === 'tab')
         return changeTab(b.dataset.tab || 'today');
     if (action === 'recovery')
@@ -1352,12 +1429,18 @@ window.addEventListener('click', (evt) => {
         activeModal = '';
         return render();
     }
-    if(action==='coach-budget'){coachBudget=clamp(num(b.dataset.minutes,45),20,180);return render();}
+    if (action === 'coach-budget') {
+        coachBudget = { day: today(), minutes: clamp(num(b.dataset.minutes, 45), 20, 180) };
+        return render();
+    }
     if (action === 'minutes') {
-        selectedMinutes = num(b.dataset.minutes, 45);
+        const day = today(), minutes = num(b.dataset.minutes, 45);
+        if (trainSelection(day).plan) coachBudget = { day, minutes };
+        else selectedMinutes = minutes;
         return render();
     }
     if (action === 'choose-kind') {
+        customWorkout = true;
         selectedKind = b.dataset.kind || 'gym-full-a';
         workoutLibraryOpen = true;
         return render();
@@ -1378,19 +1461,14 @@ window.addEventListener('click', (evt) => {
         window.scrollTo(0,0);
         return;
     }
-    if (action === 'start-selected')
-        return start(selectedKind, selectedMinutes);
+    if (action === 'start-selected') {
+        return startDisplayedWorkout(b.dataset.workout, trainSelection());
+    }
     if (action === 'start-plan') {
-        const p = state.plan.find(x => x.id === id);
-        if(p){
-            if(b.dataset.coach==='1'){
-                if(p.date!==today())return alert('Tämä ei ole tämän päivän harjoitus. Avaa Plan ja valitse haluamasi harjoitus.');
-                const recommendation=coachSessionProposal(p,coachRecommendation(state).coach,coachBudget ?? p.duration);
-                if(!recommendation||coachRecommendation(state).coach.pain)return alert('Arvioi ensin kipu- tai sairausoire.');
-                return start(recommendation.kind,recommendation.minutes,p.id);
-            }
-            return start(p.kind,p.duration,p.id);
-        }
+        const day = today();
+        const p = previewPlanId ? state.plan.find(x => x.id === previewPlanId) : coachRecommendation(state, day).plan;
+        const choice = p?.id === id && p.date === day && p.status === 'planned' ? plannedPreview(p, day) : null;
+        return startDisplayedWorkout(b.dataset.workout, choice);
     }
     if (action === 'finish-modal')
         return openModal('finish');
@@ -1547,7 +1625,10 @@ window.addEventListener('input', evt => {
     }
 });
 window.addEventListener('change', evt => {
-    if(evt.target?.id==='coach-custom-minutes'){coachBudget=clamp(num(evt.target.value,45),20,180);return render();}
+    if (evt.target?.id === 'coach-custom-minutes') {
+        coachBudget = { day: today(), minutes: clamp(num(evt.target.value, 45), 20, 180) };
+        return render();
+    }
     if(evt.target?.matches?.('[data-auto-sync]')){autoSyncEnabled=!!evt.target.checked;localStorage.setItem('up62-auto-sync',autoSyncEnabled?'on':'off');syncMessage=autoSyncEnabled?'Automaattinen synkronointi otettu käyttöön.':'Automaattinen synkronointi poistettu käytöstä.';render();if(autoSyncEnabled)void autoSyncIfDue(true);return;}
     const target = evt.target;
     if (target.matches('[data-setting]')) {
