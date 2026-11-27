@@ -14,12 +14,15 @@ test('BR01: PWA technical identity remains unchanged',()=>{
  assert.match(html,/localStorage\.getItem\('ultra-performance-worker-url'\)/);
  assert.match(html,/indexedDB\.open\('ultra-performance-auth',1\)/);
 });
-test('BR02: visible brand name, About attribution and iOS title are Stride',()=>{
+test('BR02: visible version is 6.6.0 and the iOS title remains Stride',()=>{
  assert.equal(manifest.name,'Stride');assert.equal(manifest.short_name,'Stride');
- assert.match(html,/<title>Stride 6\.5\.0/);
+ assert.match(html,/<title>Stride 6\.6\.0/);
  assert.match(html,/apple-mobile-web-app-title" content="Stride"/);
  assert.match(html,/<strong>STRIDE<\/strong>/);
- assert.match(html,/Stride<\/strong> · by Oivallus · 6\.5\.0/);
+ assert.match(html,/HYBRID TRAINING SYSTEM · 6\.6\.0/);
+ assert.match(html,/TRAINING INTELLIGENCE \/ TODAY · 6\.6\.0/);
+ assert.match(html,/ACTIVE TRAINING \/ 6\.6\.0/);
+ assert.match(html,/Stride<\/strong> · by Oivallus · 6\.6\.0/);
  assert.match(html,/<img src="symbol\.svg" alt="" width="39" height="39">/);
 });
 test('BR03: Apple icon and PWA icons reference original supplied asset names',()=>{
@@ -39,21 +42,30 @@ test('BR04: legacy migration and old saved labels stay compatible',()=>{
 });
 test('BR05: SW pre-caches the new branding assets',()=>{
  for(const n of ['symbol.svg','icon.svg','icon-32.png','icon-180.png','icon-192.png','icon-512.png'])assert.ok(sw.includes("'./"+n+"'"),n);
- assert.match(sw,/CACHE_NAME='ultra-performance-v6\.5\.0-stride'/);
+ assert.match(sw,/CACHE_NAME='ultra-performance-v6\.6\.0-stride'/);
 });
 function mockSW({online=false,cacheContents={}}={}){
  const handlers={};const deleted=[];const entries=new Map(Object.entries(cacheContents));
  const fakeCache={addAll:async assets=>{fakeCache.assets=assets;},put:async(k,v)=>entries.set(k,v),match:async k=>entries.get(k)};
- const caches={open:async()=>fakeCache,keys:async()=>['ultra-performance-v6.4.1','other-app-cache','ultra-performance-v6.5.0-stride'],delete:async k=>{deleted.push(k);return true}};
+ const caches={open:async()=>fakeCache,keys:async()=>['ultra-performance-v6.4.1','other-app-cache','ultra-performance-v6.5.0-stride','ultra-performance-v6.6.0-stride'],delete:async k=>{deleted.push(k);return true}};
  const self={location:{origin:'https://tilezzz.github.io'},registration:{scope:'https://tilezzz.github.io/Gym/'},addEventListener:(name,cb)=>handlers[name]=cb,skipWaiting:()=>{},clients:{claim:async()=>{}}};
  const Response={error:()=>({kind:'network-error'})};
  const fetch=async req=>{if(!online)throw Error('offline');return {ok:true,type:'basic',clone(){return this},kind:'online'}};
- vm.runInNewContext(sw,{self,caches,fetch,Response,URL,Promise});
+ vm.runInNewContext(sw,{self,caches,fetch,Request,Response,URL,Promise});
  return {handlers,deleted,fakeCache};
 }
+test('BR09: SW installation bypasses the HTTP cache for each offline asset',async()=>{
+ const {handlers,fakeCache}=mockSW();let task;handlers.install({waitUntil:p=>task=p});await task;
+ const assets=Array.from(fakeCache.assets);
+ assert.deepEqual(assets.map(request=>new URL(request.url).pathname),[
+  '/Gym/','/Gym/index.html','/Gym/manifest.webmanifest','/Gym/symbol.svg','/Gym/icon.svg',
+  '/Gym/icon-32.png','/Gym/icon-180.png','/Gym/icon-192.png','/Gym/icon-512.png'
+ ]);
+ assert.ok(assets.every(request=>request.cache==='reload'));
+});
 test('BR06: SW activation deletes only this app’s previous cache, not other apps',async()=>{
  const {handlers,deleted}=mockSW();let task;handlers.activate({waitUntil:p=>task=p});await task;
- assert.deepEqual(deleted,['ultra-performance-v6.4.1']);
+ assert.deepEqual(deleted,['ultra-performance-v6.4.1','ultra-performance-v6.5.0-stride']);
 });
 test('BR07: offline navigation uses cached HTML, but missing icons do not',async()=>{
  const htmlUrl='https://tilezzz.github.io/Gym/index.html';
