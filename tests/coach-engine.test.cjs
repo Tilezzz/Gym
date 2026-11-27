@@ -177,9 +177,15 @@ test('Coach: generated decisions validate over energy, sleep, symptom and lock c
     assert.deepEqual(api.validateDecision(api.evaluateCoach(c,now),c,now),[]);
   }
 });
-test('Coach: no production module, service worker or persistence wiring added',()=>{
-  const root=path.join(__dirname,'..');
-  for(const file of ['index.html','sw.js'])assert.equal(fs.readFileSync(path.join(root,file),'utf8').includes('src/coach/'),false);
+test('Coach: Today loads a local module and the Coach modules cannot access browser storage or network', () => {
+  const root = path.join(__dirname, '..');
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  assert.match(html, /import\('\.\/src\/coach\/today\.mjs'\)/);
+  assert.doesNotMatch(html, /\/coach\/chat/);
+  for (const name of ['today', 'engine', 'context', 'contracts']) {
+    const source = fs.readFileSync(path.join(root, 'src', 'coach', `${name}.mjs`), 'utf8');
+    assert.doesNotMatch(source, /\b(fetch|XMLHttpRequest|WebSocket|sendBeacon)\s*\(|\b(localStorage|sessionStorage|indexedDB)\b/);
+  }
 });
 test('Coach: isolated versus repeated poor sleep must be established, not guessed',async()=>{
   const api=await modules,c=copy(fixture);c.evidence=c.evidence.filter(e=>e.metric!=='sleep_pattern');

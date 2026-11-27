@@ -1,6 +1,9 @@
 /* Stride 6.5.0 — network-first pages, offline fallback, update discovery. */
-const CACHE_NAME='ultra-performance-v6.5.0-stride';
-const ASSETS=['./','./index.html','./manifest.webmanifest','./symbol.svg','./icon.svg','./icon-32.png','./icon-180.png','./icon-192.png','./icon-512.png'];
+const CACHE_NAME='ultra-performance-v6.5.0-stride-coach';
+const ASSETS=[
+  './','./index.html','./manifest.webmanifest','./symbol.svg','./icon.svg','./icon-32.png','./icon-180.png','./icon-192.png','./icon-512.png',
+  './src/coach/today.mjs','./src/coach/context.mjs','./src/coach/contracts.mjs','./src/coach/engine.mjs'
+];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(ASSETS)));
   self.skipWaiting();
