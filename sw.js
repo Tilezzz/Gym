@@ -2,7 +2,9 @@
 const CACHE_NAME='ultra-performance-v6.6.0-stride';
 const ASSETS=['./','./index.html','./manifest.webmanifest','./symbol.svg','./icon.svg','./icon-32.png','./icon-180.png','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',event=>{
-  event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(ASSETS)));
+  // Populate the new offline cache from the release, bypassing the browser's HTTP cache.
+  const requests=ASSETS.map(asset=>new Request(new URL(asset,self.registration.scope),{cache:'reload'}));
+  event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(requests)));
   self.skipWaiting();
 });
 self.addEventListener('activate',event=>{

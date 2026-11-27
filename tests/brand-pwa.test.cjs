@@ -51,9 +51,18 @@ function mockSW({online=false,cacheContents={}}={}){
  const self={location:{origin:'https://tilezzz.github.io'},registration:{scope:'https://tilezzz.github.io/Gym/'},addEventListener:(name,cb)=>handlers[name]=cb,skipWaiting:()=>{},clients:{claim:async()=>{}}};
  const Response={error:()=>({kind:'network-error'})};
  const fetch=async req=>{if(!online)throw Error('offline');return {ok:true,type:'basic',clone(){return this},kind:'online'}};
- vm.runInNewContext(sw,{self,caches,fetch,Response,URL,Promise});
+ vm.runInNewContext(sw,{self,caches,fetch,Request,Response,URL,Promise});
  return {handlers,deleted,fakeCache};
 }
+test('BR09: SW installation bypasses the HTTP cache for each offline asset',async()=>{
+ const {handlers,fakeCache}=mockSW();let task;handlers.install({waitUntil:p=>task=p});await task;
+ const assets=Array.from(fakeCache.assets);
+ assert.deepEqual(assets.map(request=>new URL(request.url).pathname),[
+  '/Gym/','/Gym/index.html','/Gym/manifest.webmanifest','/Gym/symbol.svg','/Gym/icon.svg',
+  '/Gym/icon-32.png','/Gym/icon-180.png','/Gym/icon-192.png','/Gym/icon-512.png'
+ ]);
+ assert.ok(assets.every(request=>request.cache==='reload'));
+});
 test('BR06: SW activation deletes only this app’s previous cache, not other apps',async()=>{
  const {handlers,deleted}=mockSW();let task;handlers.activate({waitUntil:p=>task=p});await task;
  assert.deepEqual(deleted,['ultra-performance-v6.4.1','ultra-performance-v6.5.0-stride']);
