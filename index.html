@@ -80,7 +80,7 @@
 .soft{font-size:13px;color:#b6c3c5}.history-row{align-items:flex-start}.history-row>strong,.history-row>.pill{flex-shrink:0}
 @media(max-width:480px){.event{grid-template-columns:42px minmax(0,1fr);gap:9px}.event .controls{grid-column:2;justify-content:flex-end}.card{padding:14px}.hero .headline{font-size:26px}.history-row{gap:8px}.row.between{flex-wrap:wrap}}
 </style>
-  <title>Stride 6.5.0 — Adaptive Coach</title>
+  <title>Stride 6.6.0 — Adaptive Coach</title>
 </head>
 <body>
  <div id="app" aria-live="polite"></div>
@@ -1133,7 +1133,7 @@ function flash(msg) { const t = document.getElementById('toast'); if (!t)
 const dayName = (day) => new Date(`${day}T12:00:00`).toLocaleDateString('fi-FI', { weekday: 'short' }).replace('.', '').toUpperCase();
 const dayNum = (day) => day.slice(8);
 function nav() { const items = [['today', '⌁', 'Tänään'], ['plan', '▦', 'Ohjelma'], ['train', '✚', 'Treeni'], ['analyze', '▥', 'Kehitys'], ['settings', '⚙', 'Asetukset']]; return `<nav class="nav" aria-label="Päävalikko"><div class="nav-inner">${items.map(([k, icon, label]) => `<button data-action="tab" data-tab="${k}" class="${tab === k ? 'active' : ''}" aria-current="${tab === k ? 'page' : 'false'}"><span class="symbol">${icon}</span><span>${label}</span></button>`).join('')}</div></nav>`; }
-function header() { return `<header class="top"><div class="brand"><div class="brand-icon"><img src="symbol.svg" alt="" width="39" height="39"></div><div><strong>STRIDE</strong><span>HYBRID TRAINING SYSTEM · 6.5.0</span></div></div><div class="top-right"><div class="meta-date">${esc(new Date().toLocaleDateString('fi-FI', { day: 'numeric', month: 'short' }))}<br><span style="color:#cdd6d6">${esc(new Date().toLocaleDateString('fi-FI', { weekday: 'long' }))}</span></div><div class="avatar">HYB</div></div></header>`; }
+function header() { return `<header class="top"><div class="brand"><div class="brand-icon"><img src="symbol.svg" alt="" width="39" height="39"></div><div><strong>STRIDE</strong><span>HYBRID TRAINING SYSTEM · 6.6.0</span></div></div><div class="top-right"><div class="meta-date">${esc(new Date().toLocaleDateString('fi-FI', { day: 'numeric', month: 'short' }))}<br><span style="color:#cdd6d6">${esc(new Date().toLocaleDateString('fi-FI', { weekday: 'long' }))}</span></div><div class="avatar">HYB</div></div></header>`; }
 function coachSessionProposal(plan,insight,budget){
   let kind=plan.kind,minutes=Math.min(plan.duration,budget),reason='';
   if(!plan.locked&&insight.level==='adjust'){
@@ -1227,7 +1227,7 @@ function todayView() {
     const proposal=choice?.proposal;
     const canStart=isToday&&!insight.pain&&!state.active;
     const quickChoices=[...new Set([20,30,45,60,plan?.duration].filter(n=>Number.isFinite(n)&&n>=20&&n<=180))].sort((a,b)=>a-b).map(n=>`<button class="choice ${budget===n?'on':''}" data-action="coach-budget" data-minutes="${n}">${n} min</button>`).join('');
-    return `<div class="eyebrow">TRAINING INTELLIGENCE / TODAY · 6.5.0</div><h1 style="margin-top:8px">Hybridi ilman kompromisseja.</h1><p class="lead">Adaptive Coach huomioi palautumisen, harjoittelun ja ajan. Lopullinen päätös on sinulla.</p>
+    return `<div class="eyebrow">TRAINING INTELLIGENCE / TODAY · 6.6.0</div><h1 style="margin-top:8px">Hybridi ilman kompromisseja.</h1><p class="lead">Adaptive Coach huomioi palautumisen, harjoittelun ja ajan. Lopullinen päätös on sinulla.</p>
  <section class="card hero mt"><div class="row between"><span class="eyebrow">${isToday?'PÄIVÄN HARJOITUSEHDOTUS':'TÄNÄÄN · EI SUUNNITELTUA HARJOITUSTA'}</span>${isToday?pill(plan.priority==='key'?'KEY SESSION':'ADAPTIVE','green'):pill('PALAUTUMINEN / VAPAA PÄIVÄ')}</div>
  <div class="headline">${isToday?esc(proposal.title):'Palautumista tai vapaavalintainen treeni'}</div>
  <div class="badge-line">${isToday?pill(formatDuration(proposal.minutes))+pill(ACTIVITIES[plan.sport])+(proposal.modified?pill('Mukautettu','warn'):''):''}</div>
@@ -1345,7 +1345,7 @@ function activeView(){
     ${d.sets.filter(x=>x.exerciseId===e.id).map(set=>`<div class="set ${set.done?'completed-set':''}" data-setrow="${esc(set.id)}"><span>${set.set}</span><input inputmode="decimal" type="text" inputmode="decimal" pattern="[0-9]+([,.][0-9]{1,2})?" value="${String(set.weight).replace(".",",")}" data-set="${esc(set.id)}" data-field="weight" aria-label="Paino sarjalle ${set.set}"><input inputmode="numeric" type="number" min="1" max="50" value="${set.reps}" data-set="${esc(set.id)}" data-field="reps" aria-label="Toistot sarjalle ${set.set}"><input inputmode="numeric" type="number" min="0" max="6" value="${set.rir}" data-set="${esc(set.id)}" data-field="rir" aria-label="RIR sarjalle ${set.set}"><button class="btn sm ${set.done?'checked':'done'}" data-action="set-done" data-id="${esc(set.id)}" aria-pressed="${set.done}" aria-label="${set.done?'Poista valmius sarjalta':'Merkitse sarja valmiiksi'} ${set.set}">${set.done?'✓':'○'}</button></div>`).join('')}
     <p class="micro mt">Syötä työpaino ensimmäisellä käyttökerralla. Jatkossa edelliset toteutuneet painot ja toistot ehdotetaan.</p></div>`:
     `<section class="card mt"><div class="events">${s.segments.map((x,i)=>`<div class="event"><div class="day"><b>${i+1}</b><small>OSIO</small></div><div><div class="name">${esc(x.title)}</div><div class="detail">${esc(x.effort)}</div></div><strong>${x.minutes} min</strong></div>`).join('')}</div></section>`;
-    return `<div class="eyebrow">ACTIVE TRAINING / 6.5.0</div><h1 class="active-head">${esc(s.title)}</h1>
+    return `<div class="eyebrow">ACTIVE TRAINING / 6.6.0</div><h1 class="active-head">${esc(s.title)}</h1>
      <div class="time-strip"><div><span>AIKA</span><br><b id="elapsed">00:00</b></div><div><span>SARJAT</span><br><b>${done}/${d.sets.length}</b></div><div><span>LEPO</span><br><b id="rest">—</b></div><button class="btn sm ghost" data-action="rest-skip">Ohita</button></div>
      ${workoutParts}
      <div class="btn-row mt"><button class="btn primary" data-action="finish-modal">Lopeta ja kirjaa →</button><button class="btn danger" data-action="discard">Hylkää harjoitus</button></div>`;
@@ -1406,7 +1406,7 @@ function settingsView() {
   <p class="micro mt">Garmin-avaimet, Oura Client Secret ja OAuth-tokenit pysyvät Cloudflaressa. ADMIN_TOKEN on vain istuntomuistissa; laitteen paritus tallentaa selaimen IndexedDB:hen ei-vietävän allekirjoitusavaimen. Harjoituskirjaukset pysyvät paikallisessa selaimessa eivätkä synkronoidu laitteiden välillä.</p>
 </section>
  <div class="title-row"><h2>Backup & data portability</h2></div><section class="card"><p class="soft">Tiedot säilyvät tällä laitteella selaimen tallennustilassa. Ne eivät synkronoidu iPhonen, iPadin ja Macin välillä. Vie varmuuskopio ennen sovelluksen uudelleenasennusta tai Pages-sivun muutosta. Garmin/Oura-tuonti hyväksyy vain rajapintojen JSON-tietoja, ei FIT-tiedostoja.</p><div class="btn-row mt">${btn('export', 'Vie JSON', 'primary')}${btn('export-csv', 'Vie CSV')}${btn('import', 'Tuo JSON')}${btn('import-garmin', 'Tuo Garmin JSON')}${btn('import-oura', 'Tuo Oura JSON')}</div><input type="file" id="backup-file" accept=".json,application/json" hidden><input type="file" id="garmin-file" accept=".json,application/json" hidden><input type="file" id="oura-file" accept=".json,application/json" hidden><div class="divider"></div><div class="status">Uusi aloitus: vanhaa harjoitushistoriaa ei tuoda automaattisesti. Voit viedä uuden harjoitushistorian JSON-muodossa.</div><div class="btn-row mt">${btn('export', 'Vie uusi varmuuskopio')}${btn('reset', 'Nollaa paikalliset tiedot', 'danger')}</div></section>
- <p class="micro mt"><strong>Stride</strong> · by Oivallus · 6.5.0 · Offline-first PWA. Harjoitustiedot säilyvät tällä laitteella; Garmin- ja Oura-tiedot haetaan yhdistetyistä palveluista.</p>`;
+ <p class="micro mt"><strong>Stride</strong> · by Oivallus · 6.6.0 · Offline-first PWA. Harjoitustiedot säilyvät tällä laitteella; Garmin- ja Oura-tiedot haetaan yhdistetyistä palveluista.</p>`;
 }
 function modalView() {
     if (!activeModal)
