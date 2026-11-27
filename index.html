@@ -765,10 +765,10 @@ return { importGarminJSON, importOuraJSON, importOuraWorkoutJSON };
 
 // main.js
 const { ACTIVITIES, EXERCISES, TEMPLATES } = __catalog;
-const { addActivity, coachRecommendation, exerciseHistory, finishSession, formatDuration, generate, getRecovery, initial, makeWeek, recordRecovery, progression, recoveryAdvice, startSession, swapPlan, weekStats } = __engine;
+const { addActivity, coachRecommendation, exerciseHistory, finishSession, formatDuration, generate, getRecovery, initial, makeWeek, recordRecovery, progression, startSession, swapPlan, weekStats } = __engine;
 const { csvExport, download, filenameDate, importBackup, load, save } = __store;
 const { importGarminJSON, importOuraJSON, importOuraWorkoutJSON } = __external;
-const { addDays, clamp, fiDate, monday, num, today, uid } = __types;
+const { addDays, clamp, fiDate, localDate, monday, num, today, uid } = __types;
 // Activities are classified by purpose, not by calories or pulse alone.
 // Daily life is important for recovery but is never treated as planned aerobic training.
 function activityCategory(a){
@@ -834,7 +834,12 @@ let feedbackActivityId = '';
 let planWeek = monday(today()), selectedKind = 'gym-full-a', selectedMinutes = 45, chartExercise = 'bench', notice = '';
 let restUntil = Number(state.active?.restUntil || 0);
 let workoutLibraryOpen = false;
-let coachBudget = null; // null = planned duration; never carry yesterday's time budget into today
+// Fresh confirmations and the preview budget are scoped to this page and day.
+let coachCheckIn = null;
+let coachBudget = null;
+let evaluateTodayCoach;
+let coachCheckInMaxAgeMs;
+let coachRefreshTimer;
 let swapOpen = false, swapSearch = '';
 const el = () => document.querySelector('#app');
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1033,57 +1038,145 @@ const dayName = (day) => new Date(`${day}T12:00:00`).toLocaleDateString('fi-FI',
 const dayNum = (day) => day.slice(8);
 function nav() { const items = [['today', '⌁', 'Today'], ['plan', '▦', 'Plan'], ['train', '✚', 'Train'], ['analyze', '▥', 'Analyze'], ['settings', '⚙', 'Settings']]; return `<nav class="nav" aria-label="Päävalikko"><div class="nav-inner">${items.map(([k, icon, label]) => `<button data-action="tab" data-tab="${k}" class="${tab === k ? 'active' : ''}" aria-current="${tab === k ? 'page' : 'false'}"><span class="symbol">${icon}</span><span>${label}</span></button>`).join('')}</div></nav>`; }
 function header() { return `<header class="top"><div class="brand"><div class="brand-icon"><img src="symbol.svg" alt="" width="39" height="39"></div><div><strong>STRIDE</strong><span>HYBRID TRAINING SYSTEM · 6.5.0</span></div></div><div class="top-right"><div class="meta-date">${esc(new Date().toLocaleDateString('fi-FI', { day: 'numeric', month: 'short' }))}<br><span style="color:#cdd6d6">${esc(new Date().toLocaleDateString('fi-FI', { weekday: 'long' }))}</span></div><div class="avatar">HYB</div></div></header>`; }
-function coachSessionProposal(plan,insight,budget){
-  if(!plan)return null;
-  const originalKind=plan.kind;
-  let kind=originalKind,minutes=Math.min(plan.duration,budget),reason='';
-  if(!plan.locked&&insight.level==='adjust'){
-    minutes=Math.min(minutes,30);
-    if(plan.sport==='run'&&(kind==='run-long'||kind==='run-quality'))kind='run-easy';
-    if(plan.sport==='cycle'&&kind!=='cycle-easy')kind='cycle-easy';
-    reason='Palautumisen perusteella kevennetty: kevyt teho ja enintään 30 minuuttia. Voit myös levätä.';
-  }else if(!plan.locked&&kind==='run-long'&&minutes<Math.max(50,Math.round(plan.duration*.70))){
-    kind='run-easy';reason='Aikabudjetti lyhentää pitkän lenkin tavalliseksi kevyeksi PK-lenkiksi.';
-  }else if(minutes<plan.duration){
-    reason=plan.locked?'Lukittu suunnitelma pysyy muuttumattomana; valitsemasi aika koskee vain tätä toteutusta.':'Aikabudjetin vuoksi lyhennetty verrattuna alkuperäiseen suunnitelmaan.';
+const coachActions = {
+  perform: 'Suunnitelman mukainen harjoitus', ease: 'Harkitse kevennystä',
+  move: 'Harkitse siirtoa', rest: 'Suosi lepoa', ask: 'Tarvitaan lisätietoja'
+};
+const coachReasons = {
+  urgent_symptom: 'Ilmoitettu oire vaatii kiireellistä arviota. Keskeytä harjoittelu.',
+  clarify_symptoms: 'Kirjasit kipua tai sairausoireita. Selvitä oire ennen harjoittelua.',
+  conflicting_observations: 'Saman päivän havainnot ovat ristiriidassa.',
+  missing_check_in: 'Päätös tarvitsee tuoreen Smart Check-inin.',
+  no_today_plan: 'Arvioitavaa harjoitusta ei löytynyt paikallisesta suunnitelmasta.',
+  low_energy_missing_context: 'Vire on matala ja unen tiedot puuttuvat.',
+  clarify_sleep_pattern: 'Lyhyt uni ja matala vire puoltavat unen keston selvittämistä useammalta yöltä.',
+  accumulated_fatigue_or_very_low_energy: 'Hyvin matala vire tai kasautunut väsymys puoltaa lepoa.',
+  insufficient_time: 'Käytettävissä oleva aika jää alle 20 minuutin.',
+  combined_fatigue_or_time_constraint: 'Väsymys yhdessä lyhyen unen tai jalkakuormituksen kanssa tai lyhyempi aikabudjetti puoltaa kevennystä.',
+  clarify_fatigue: 'Vire, jalkakuormitus tai lyhyet yöunet vaativat lisäarviota.',
+  no_combined_reason_to_adjust: 'Check-inin perusteella ei ole yhdistettyä syytä muuttaa treeniä.',
+  incomplete_load_history: 'Viikon kuormitushistorian kattavuutta ei voitu varmistaa.'
+};
+const coachFields = {
+  energy: 'tämänhetkinen vire', symptoms: 'kipu- tai sairausoireet', sleep_hours: 'viime yön unen kesto',
+  sleep_pattern: 'kuinka pitkään huono uni on jatkunut', plan: 'tämän päivän harjoitus'
+};
+const coachObservationText = {
+  energy: value => `vire ${value}/5`,
+  legs: value => `jalat ${value}/3`,
+  sleep_hours: value => `unta ${value.toLocaleString('fi-FI')} h`,
+  sleep_pattern: value => value === 'single_night' ? 'yksi huono yö' : 'useita huonoja öitä',
+  time_budget: value => `aikaa ${value} min`
+};
+function coachDecisionView(planned, now) {
+  if (state.active) return '<p class="soft mt">Harjoitus on käynnissä. Päivän treenipäätös on käytettävissä, kun harjoitus on päättynyt.</p>';
+  if (!planned) return '<p class="soft mt">Tälle päivälle ei ole suunniteltua harjoitusta.</p>';
+  if (!evaluateTodayCoach) return `<p class="soft mt">${evaluateTodayCoach === null ? 'Coach-päätös ei ole saatavilla. Muu harjoittelu on käytettävissä.' : 'Ladataan paikallista Coach Engineä…'}</p>`;
+  let result;
+  try {
+    result = evaluateTodayCoach(state, { now: now.toISOString(),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, checkIn: coachCheckIn, timeBudget: coachBudget });
+  } catch {
+    return '<p class="soft mt">Coach-arviota ei voitu muodostaa. Tarkista päivän suunnitelma ja Smart Check-in.</p>';
   }
-  return {kind,minutes,title:TEMPLATES[kind]?.title||plan.title,reason,
-    modified:kind!==originalKind||minutes!==plan.duration,
-    intensity:kind==='run-easy'?'Kevyt Z1–matala Z2, keskusteluvauhti.':
-      kind==='cycle-easy'?'Kevyt Z1–matala Z2.':
-      plan.sport==='strength'&&insight.level==='adjust'&&!plan.locked?'Väljennä sarjakuormaa ja pidä noin 3 toistoa varastossa.':''};
+  const { decision, plan, proposal, observations } = result;
+  const inputs = observations.filter(e => coachObservationText[e.metric])
+    .map(e => coachObservationText[e.metric](e.value));
+  const tone = decision.safety !== 'routine' ? 'coach-hold' : decision.action === 'ease' ? 'coach-adjust' : '';
+  const preview = proposal?.type === 'shorten_session'
+    ? `Kesto ${formatDuration(plan.durationMinutes)} → ${formatDuration(proposal.durationMinutes)}.`
+    : proposal?.type === 'replace_with_easy'
+      ? `Harjoitus → ${TEMPLATES[proposal.targetKind]?.title || proposal.targetKind}.`
+      : '';
+  const uncertainty = { low: 'pieni', moderate: 'kohtalainen', high: 'suuri' }[decision.uncertainty];
+  return `<div class="coach-insight mt ${tone}" aria-label="Coach-arvio">
+    <h3>${esc(coachActions[decision.action])}</h3>
+    <ul>${decision.reasons.map(({code}) => `<li>${esc(coachReasons[code] || 'Coach Engine arvioi päivän tiedot.')}</li>`).join('')}</ul>
+    ${inputs.length ? `<p class="soft mt">Tuoreet tiedot · ${esc(inputs.join(', '))}</p>` : ''}
+    ${decision.missingFields.length ? `<p class="soft mt">Puuttuvat tai vahvistettavat tiedot · ${esc(decision.missingFields.map(field => coachFields[field] || field).join(', '))}</p>` : ''}
+    ${decision.questions.map(question => `<p class="soft mt">${esc(question)}</p>`).join('')}
+    ${preview ? `<p class="explain mt"><b>Esikatselu</b> · ${esc(preview)} Suunnitelma säilyy ennallaan.</p>` : ''}
+    ${plan?.locked ? '<p class="soft mt">Päivän harjoitus on lukittu.</p>' : ''}
+    <p class="micro mt">Epävarmuus ${uncertainty} · paikallinen Smart Check-in ja harjoitussuunnitelma</p>
+  </div>`;
+}
+function setCoachBudget(minutes) {
+  const now = new Date();
+  coachBudget = minutes === undefined ? null : { minutes, day: localDate(now), observedAt: now.toISOString() };
+  render();
+}
+function todayCoachPlan(day) {
+  return state.plan.filter(p => p.date === day && p.status === 'planned')
+    .sort((a, b) => String(a.id).localeCompare(String(b.id)))[0];
+}
+function todayCoachResult(planned, now) {
+  const planLabel = planned ? `<p class="soft mt">Suunnitelmassa · ${esc(planned.title)} · ${formatDuration(planned.duration)}</p>` : '';
+  return planLabel + coachDecisionView(planned, now);
+}
+function currentCoachBudget(now, day) {
+  return coachBudget?.day === day && now - Date.parse(coachBudget.observedAt) <= coachCheckInMaxAgeMs
+    ? coachBudget.minutes : null;
+}
+function scheduleCoachRefresh(now) {
+  clearTimeout(coachRefreshTimer);
+  if (tab !== 'today') return;
+  const day = localDate(now);
+  const midnight = new Date(now);
+  let next = midnight.setHours(24, 0, 0, 0);
+  for (const observation of [coachCheckIn, coachBudget]) {
+    if (observation?.day !== day) continue;
+    const expiry = Date.parse(observation.observedAt) + coachCheckInMaxAgeMs + 1;
+    if (expiry > now) next = Math.min(next, expiry);
+  }
+  coachRefreshTimer = setTimeout(refreshTodayCoach, next - now);
+}
+function refreshTodayCoach() {
+  const result = document.getElementById('coach-today-result');
+  if (!result) return;
+  const now = new Date();
+  const day = localDate(now);
+  const planned = todayCoachPlan(day);
+  result.innerHTML = todayCoachResult(planned, now);
+  const controls = document.getElementById('coach-today-controls');
+  controls.hidden = !planned || !!state.active || !evaluateTodayCoach;
+  const budget = currentCoachBudget(now, day);
+  for (const choice of controls.querySelectorAll('[data-action="coach-budget"]')) {
+    const selected = Number(choice.dataset.minutes) === budget;
+    choice.classList.toggle('on', selected);
+    choice.setAttribute('aria-pressed', String(selected));
+  }
+  const minutes = document.getElementById('coach-custom-minutes');
+  const savedMinutes = budget === null ? '' : String(budget);
+  // Keep unsubmitted input and focus while the result expires.
+  if (!minutes.validity.badInput && minutes.value === minutes.defaultValue) minutes.value = savedMinutes;
+  minutes.defaultValue = savedMinutes;
+  scheduleCoachRefresh(now);
 }
 function todayView() {
-    const stat = weekStats(state), co=coachRecommendation(state), r=getRecovery(state), plan=co.plan, advice=recoveryAdvice(state);
+    const now = new Date(), day = localDate(now), stat = weekStats(state), r = getRecovery(state);
+    const planned = todayCoachPlan(day);
     const recent=state.activities.slice().sort((a,b)=>b.startedAt.localeCompare(a.startedAt)).slice(0,4);
-    const summary=activitySummary(state),trend=recoveryContext(state),insight=co.coach;
-    const isToday=!!plan&&plan.date===today();
-    const budget=coachBudget ?? plan?.duration ?? 45;
-    const proposal=isToday?coachSessionProposal(plan,insight,budget):null;
-    const canStart=isToday&&!insight.pain;
-    const quickChoices=[...new Set([20,30,45,60,plan?.duration].filter(n=>Number.isFinite(n)&&n>=20&&n<=180))].sort((a,b)=>a-b).map(n=>`<button class="choice ${budget===n?'on':''}" data-action="coach-budget" data-minutes="${n}">${n} min</button>`).join('');
-    return `<div class="eyebrow">TRAINING INTELLIGENCE / TODAY · 6.5.0</div><h1 style="margin-top:8px">Hybridi ilman kompromisseja.</h1><p class="lead">Adaptive Coach huomioi palautumisen, harjoittelun ja ajan. Lopullinen päätös on sinulla.</p>
- <section class="card hero mt"><div class="row between"><span class="eyebrow">${isToday?'PÄIVÄN HARJOITUSEHDOTUS':'TÄNÄÄN · EI SUUNNITELTUA HARJOITUSTA'}</span>${isToday?pill(plan.priority==='key'?'KEY SESSION':'ADAPTIVE','green'):pill('PALAUTUMINEN / VAPAA PÄIVÄ')}</div>
- <div class="headline">${isToday?esc(proposal.title):'Palautumista tai vapaavalintainen treeni'}</div>
- <div class="badge-line">${isToday?pill(formatDuration(proposal.minutes))+pill(ACTIVITIES[plan.sport])+(proposal.modified?pill('Mukautettu','warn'):''):''}</div>
- <div class="coach-insight mt ${insight.level==='adjust'?'coach-adjust':insight.level==='hold'?'coach-hold':''}">
-   <div class="row between"><strong>ADAPTIVE COACH</strong>${pill(insight.label,insight.level==='adjust'||insight.level==='hold'?'warn':'green')}</div>
-   <p class="soft mt">${esc(insight.summary)}</p>
-   ${insight.reasons.length?`<p class="micro mt">Perusteet: ${esc(insight.reasons.slice(0,4).join(' · '))}</p>`:`<p class="micro mt">${insight.enoughDeviceData?'Oura-trendit tarkistettu.':'Vertailuhistoriaa kertyy; ei päätelmiä vähäisestä datasta.'}</p>`}
-   ${insight.level==='check'&&!insight.hasCheckIn?`<button class="btn sm ghost mt" data-action="recovery">Tee 10 sekunnin check-in →</button>`:''}
- </div>
- ${isToday?`<p class="soft mt">Alkuperäinen suunnitelma: ${esc(plan.title)} ${formatDuration(plan.duration)}. ${proposal.modified?'Tämän päivän ehdotus: '+esc(proposal.title)+' '+formatDuration(proposal.minutes)+'.':'Ehdotus vastaa suunnitelmaa.'}</p>
-   ${proposal.reason?`<div class="explain mt">${esc(proposal.reason)} ${esc(proposal.intensity)}</div>`:`${proposal.intensity?`<p class="soft mt">${esc(proposal.intensity)}</p>`:''}`}
-   ${co.warning?`<p class="soft mt">${esc(co.warning)}</p>`:''}
-   <div class="section-label mt">KÄYTETTÄVISSÄ · ${budget} MIN</div><div class="choice-row coach-budgets">${quickChoices}</div><div class="field mt"><label for="coach-custom-minutes">Muu kesto (20–180 min)</label><input id="coach-custom-minutes" type="number" inputmode="numeric" min="20" max="180" step="1" value="${budget}"></div>
-   <div class="btn-row mt"><button class="btn primary" ${!canStart?'disabled':''} data-action="start-plan" data-id="${esc(plan.id)}" data-coach="1" data-kind="${esc(proposal.kind)}" data-minutes="${proposal.minutes}">${proposal.modified?'Aloita mukautettu harjoitus':'Aloita päivän harjoitus'} →</button><button class="btn ghost" data-action="tab" data-tab="train">Valitse muu harjoitus</button></div>`:
-   `<p class="soft mt">${plan?'Seuraava suunniteltu: '+fiDate(plan.date)+' · '+esc(plan.title)+' · '+formatDuration(plan.duration)+'.':'Tulevia harjoituksia ei vielä ole.'} ${insight.level==='adjust'?'Vire puoltaa kevyttä päivää.':'Levolle ei tarvitse keksiä korvaavaa treeniä.'} Seuraavan päivän ohjelmaa ei aloiteta eikä merkitä tehdyksi automaattisesti.</p>
-   <div class="btn-row mt"><button class="btn primary" data-action="tab" data-tab="train">Valitse tämän päivän harjoitus →</button><button class="btn ghost" data-action="tab" data-tab="plan">Näytä suunnitelma</button></div>`}
- <p class="micro mt">${esc(co.balance.text)} Lajin vaihto ja suurten volyymien muutokset vaativat hyväksyntäsi.</p></section>
+    const summary=activitySummary(state),trend=recoveryContext(state);
+    const budget = currentCoachBudget(now, day);
+    const quickChoices = [20, 30, 45, 60].map(minutes => `<button class="choice ${budget === minutes ? 'on' : ''}" aria-pressed="${budget === minutes}" data-action="coach-budget" data-minutes="${minutes}">${minutes} min</button>`).join('');
+    return `<div class="eyebrow">TRAINING INTELLIGENCE / TODAY · 6.5.0</div><h1 style="margin-top:8px">Hybridi ilman kompromisseja.</h1>
+ <section class="card hero mt" aria-labelledby="coach-today-heading">
+  <h2 id="coach-today-heading">Päivän treenipäätös</h2>
+  <div id="coach-today-result">${todayCoachResult(planned, now)}</div>
+  <div id="coach-today-controls" ${planned && !state.active && evaluateTodayCoach ? '' : 'hidden'}>
+    <div class="section-label mt">AIKAA KÄYTETTÄVISSÄ (VALINNAINEN)</div><div class="choice-row coach-budgets">${quickChoices}</div>
+    <form id="coach-budget-form" class="mt">
+      <div class="field"><label for="coach-custom-minutes">Minuutit tänään (0–240)</label><input id="coach-custom-minutes" name="minutes" type="number" inputmode="numeric" min="0" max="240" step="1" value="${budget ?? ''}"></div>
+      <button class="btn sm ghost" type="submit">Päivitä arvio</button>
+    </form>
+    <button class="btn sm ghost mt" data-action="recovery">Avaa Smart Check-in</button>
+  </div>
+  <div class="btn-row mt"><button class="btn primary" data-action="tab" data-tab="train">${state.active ? 'Jatka harjoitusta' : 'Siirry harjoitteluun'} →</button><button class="btn ghost" data-action="tab" data-tab="plan">Näytä suunnitelma</button></div>
+ </section>
  ${bp('VIIMEISET 7 PÄIVÄÄ')}<div class="kpis"><div class="kpi"><div class="tag">VOIMAHARJOITUKSET</div><div class="value green">${stat.strength}</div><div class="unit">${stat.sets} työsarjaa</div></div><div class="kpi"><div class="tag">JUOKSU</div><div class="value">${fmt(stat.runKm, 1)}</div><div class="unit">km · ${stat.runMinutes} min</div></div><div class="kpi"><div class="tag">MUU KESTÄVYYS</div><div class="value blue">${Math.max(0,summary.minutes.endurance-stat.runMinutes)}</div><div class="unit">min · pyöräily, vaellus, hiihto</div></div></div>
  <div class="title-row"><h2>Recovery context</h2>${pill(r && r.date === today() ? 'CHECK-IN DONE' : 'NO CHECK-IN', r && r.date === today() ? 'green' : '')}</div>
  <section class="card"><div class="split"><div><label>OMA VIRE</label><div class="kpi value" style="border:0;padding:4px 0;background:transparent;min-height:0">${r && r.date === today() ? r.energy > 0 ? `${r.energy}/5` : "—" : '—'}</div></div><div><label>JALKOJEN TUNTEMUS</label><div class="kpi value" style="border:0;padding:4px 0;background:transparent;min-height:0">${r && r.date === today() ? `${r.legs}/3` : '—'}</div></div></div>
- <div class="divider"></div><p class="soft">${advice.reduce ? 'Oma vire ja kuormitus puoltaa kevennystä.' : 'Yksittäinen mittaus ei päätä harjoittelusta.'} ${esc(trend?.description||'Oura-tietoja arvioidaan vasta riittävän vertailuhistorian jälkeen.')} <span class="source-chip">${esc(autoSyncEnabled?'Automaattinen synkronointi käytössä':'Automaattinen synkronointi pois')}</span></p><div class="btn-row mt">${btn('recovery', 'Päivän check-in', 'primary')}${btn('activity', '+ Satunnainen treeni', 'ghost')}</div></section>
+ <div class="divider"></div><p class="soft">${esc(trend?.description||'Oura-tietoja arvioidaan vasta riittävän vertailuhistorian jälkeen.')} <span class="source-chip">${esc(autoSyncEnabled?'Automaattinen synkronointi käytössä':'Automaattinen synkronointi pois')}</span></p><div class="btn-row mt">${btn('recovery', 'Päivän check-in', 'primary')}${btn('activity', '+ Satunnainen treeni', 'ghost')}</div></section>
  <div class="title-row"><h2>Tulevat harjoitukset</h2><button class="btn sm ghost" data-action="tab" data-tab="plan">Koko suunnitelma →</button></div>
  <section class="card"><div class="events">${state.plan.filter(p => p.status === 'planned' && p.date >= today()).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 4).map(planEvent).join('') || '<div class="empty">Ei tulevia harjoituksia. Luo uusi viikko Plan-näkymässä.</div>'}</div></section>
  <div class="title-row"><h2>Viimeisimmät suoritukset</h2><span class="soft">${state.activities.length} yhteensä</span></div><section class="card">${recent.length ? recent.map(activityRow).join('') : '<div class="empty">Ei vielä harjoituksia. Aloita ensimmäinen harjoituksesi.</div>'}</section>
@@ -1251,7 +1344,37 @@ function modalView() {
         return `<div class="modal-backdrop"><section class="card modal" role="dialog" aria-modal="true" aria-label="Kirjaa aktiviteetti"><div class="row between"><h2>Kirjaa aktiviteetti</h2><button class="btn sm ghost" data-action="close">Sulje ✕</button></div><p class="soft mt">Smart Check-in: kesto, koettu rasitus ja tarvittaessa jalkojen kuormitus.</p><form id="activity-form"><div class="split mt"><div class="field"><label>Laji</label><select name="sport">${Object.entries(ACTIVITIES).filter(([k]) => k !== 'strength').map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></div><div class="field"><label>Päivä</label><input name="date" type="date" required value="${today()}"></div></div><div class="split"><div class="field"><label>Kesto · min</label><input name="duration" type="number" min="1" max="2000" required value="60"></div><div class="field"><label>Matka · km (valinnainen)</label><input name="distance" inputmode="decimal" type="number" min="0" step="0.1" value="0"></div></div><div class="split"><div class="field"><label>Nousumetrit</label><input name="ascent" inputmode="numeric" type="number" min="0" value="0"></div><div class="field"><label>Keskisyke (valinnainen)</label><input name="hr" inputmode="numeric" type="number" min="0" max="220" value="0"></div></div><div class="split"><div class="field"><label>Session RPE · 1–10</label><select name="rpe">${Array.from({ length: 10 }, (_, i) => i + 1).map(n => `<option value="${n}" ${n === 6 ? 'selected' : ''}>${n}/10</option>`).join('')}</select></div><div class="field"><label>Jalkojen kuormitus · 0–3</label><select name="legs"><option value="0">0 · Ei</option><option value="1" selected>1 · Kevyt</option><option value="2">2 · Kohtalainen</option><option value="3">3 · Voimakas</option></select></div></div><div class="field"><label>Huomio (valinnainen)</label><textarea name="notes" maxlength="500" placeholder="Esim. mäkinen polku, nopeat suunnanmuutokset..."></textarea></div><button type="submit" class="btn primary block">Tallenna aktiviteetti</button></form></section></div>`;
     if (activeModal === 'recovery') {
         const rec = getRecovery(state, today());
-        return `<div class="modal-backdrop"><section class="card modal" role="dialog" aria-modal="true" aria-label="Palautumisen check-in"><div class="row between"><h2>Daily recovery check-in</h2><button class="btn sm ghost" data-action="close">Sulje ✕</button></div><p class="soft mt">Oma arvio täydentää mahdollisia laitemittauksia. Tietoja ei lähetetä palvelimelle.</p><form id="recovery-form"><div class="split"><div class="field"><label>Vire · 1–5</label><select name="energy">${[1, 2, 3, 4, 5].map(n => `<option value="${n}" ${(rec?.energy || 3) === n ? 'selected' : ''}>${n} / 5</option>`).join('')}</select></div><div class="field"><label>Jalat · 0–3</label><select name="legs">${[0, 1, 2, 3].map(n => `<option value="${n}" ${(rec?.legs || 0) === n ? 'selected' : ''}>${n} / 3</option>`).join('')}</select></div></div><div class="field"><label>Kipu tai sairausoireita tänään?</label><select name="pain"><option value="0" ${!rec?.pain ? 'selected' : ''}>Ei</option><option value="1" ${rec?.pain ? 'selected' : ''}>Kyllä — arvioi kuormitus erikseen</option></select></div><details class="coach-manual-fields"><summary>Muokkaa Oura-mittauksia käsin (valinnainen)</summary><div class="split"><div class="field"><label>Unen kesto · h</label><input name="sleep" type="number" min="0" max="16" step="0.1" value="${rec?.sleepHours ?? ''}" placeholder="7.5"></div><div class="field"><label>Oura HRV · ms (valinnainen)</label><input name="hrv" type="number" min="0" max="350" value="${rec?.hrv ?? ''}" placeholder="—"></div></div><div class="split"><div class="field"><label>Leposyke (valinnainen)</label><input name="restHr" type="number" min="25" max="150" value="${rec?.restHr ?? ''}" placeholder="—"></div><div class="field"><label>Oura Readiness (valinnainen)</label><input name="readiness" type="number" min="0" max="100" value="${rec?.readiness ?? ''}" placeholder="—"></div></div></details><button type="submit" class="btn primary block mt">Tallenna check-in</button></form></section></div>`;
+        return `<div class="modal-backdrop"><section class="card modal" role="dialog" aria-modal="true" aria-label="Palautumisen check-in">
+          <div class="row between"><h2>Smart Check-in</h2><button class="btn sm ghost" data-action="close">Sulje ✕</button></div>
+          <p class="soft mt">Vahvista tämänhetkinen olosi päivän treenipäätöstä varten. Coach-arvio tehdään laitteella.</p>
+          <form id="recovery-form">
+            <div class="split mt">
+              <div class="field"><label for="check-in-energy">Vire · 1–5</label><select id="check-in-energy" name="energy">${[1, 2, 3, 4, 5].map(n => `<option value="${n}" ${(rec?.energy || 3) === n ? 'selected' : ''}>${n} / 5</option>`).join('')}</select></div>
+              <div class="field"><label for="check-in-legs">Jalat · 0–3</label><select id="check-in-legs" name="legs">${[0, 1, 2, 3].map(n => `<option value="${n}" ${(rec?.legs || 0) === n ? 'selected' : ''}>${n} / 3</option>`).join('')}</select></div>
+            </div>
+            <div class="field"><label for="check-in-pain">Kipu tai sairausoireita tänään?</label><select id="check-in-pain" name="pain" required>
+              <option value="" selected disabled>Valitse vastaus</option>
+              <option value="0">Ei</option>
+              <option value="1">Kyllä</option>
+            </select></div>
+            <div class="split">
+              <div class="field"><label for="check-in-sleep">Viime yön uni · h (valinnainen)</label><input id="check-in-sleep" name="sleep" type="number" min="0" max="16" step="0.1" placeholder="7.5"></div>
+              <div class="field"><label for="check-in-sleep-pattern">Jos nukuit huonosti, kuinka pitkään?</label><select id="check-in-sleep-pattern" name="sleep-pattern">
+                <option value="">Jätä avoimeksi</option>
+                <option value="single_night">Vain viime yö</option>
+                <option value="several_nights">Useita öitä</option>
+              </select></div>
+            </div>
+            <details class="coach-manual-fields"><summary>Muokkaa Oura-mittauksia käsin (valinnainen)</summary>
+              <div class="split">
+                <div class="field"><label for="check-in-hrv">Oura HRV · ms</label><input id="check-in-hrv" name="hrv" type="number" min="0" max="350" value="${esc(rec?.hrv ?? '')}" placeholder="—"></div>
+                <div class="field"><label for="check-in-rest-hr">Leposyke</label><input id="check-in-rest-hr" name="restHr" type="number" min="25" max="150" value="${esc(rec?.restHr ?? '')}" placeholder="—"></div>
+              </div>
+              <div class="field"><label for="check-in-readiness">Oura Readiness</label><input id="check-in-readiness" name="readiness" type="number" min="0" max="100" value="${esc(rec?.readiness ?? '')}" placeholder="—"></div>
+            </details>
+            <button type="submit" class="btn primary block mt">Tallenna check-in</button>
+          </form>
+        </section></div>`;
     }
     if (activeModal === 'finish')
         return `<div class="modal-backdrop"><section class="card modal" role="dialog" aria-modal="true" aria-label="Lopeta harjoitus"><div class="row between"><h2>Session complete</h2><button class="btn sm ghost" data-action="close">Jatka treeniä ✕</button></div><p class="soft mt">Kirjaa lyhyt Smart Check-in, jotta Adaptive Coach voi huomioida harjoituksen.</p><form id="finish-form"><div class="split"><div class="field"><label>Session RPE · 1–10</label><select name="rpe">${Array.from({ length: 10 }, (_, i) => i + 1).map(n => `<option value="${n}" ${n === 7 ? 'selected' : ''}>${n}/10</option>`).join('')}</select></div><div class="field"><label>Jalkakuormitus · 0–3</label><select name="legs"><option value="0">Ei</option><option value="1" selected>Kevyt</option><option value="2">Kohtalainen</option><option value="3">Voimakas</option></select></div></div>${state.active?.session.sport !== 'strength' ? `<div class="field"><label>Toteutunut kesto · min</label><input type="number" name="duration" min="1" max="2000" required value="${Math.max(1,Math.round((Date.now()-Date.parse(state.active.startedAt))/60000))}"></div><div class="split"><div class="field"><label>Matka · km</label><input type="number" name="distance" min="0" step="0.1" placeholder="0"></div><div class="field"><label>Nousumetrit</label><input type="number" name="ascent" min="0" step="1" placeholder="0"></div></div><div class="field"><label>Keskisyke</label><input name="avgHr" type="number" min="0" max="220" placeholder="valinnainen"></div>` : ''}<div class="field"><label>Huomio</label><textarea maxlength="500" name="notes" placeholder="Treenin tuntuma, tekniikka, olosuhteet..."></textarea></div><button class="btn primary block" type="submit">Vahvista ja tallenna</button></form></section></div>`;
@@ -1266,7 +1389,7 @@ function modalView() {
         return '';
     return `<div class="modal-backdrop"><section class="card modal" role="dialog" aria-modal="true" aria-label="Muokkaa suunnitelmaa"><div class="row between"><h2>Muokkaa harjoitusta</h2><button class="btn sm ghost" data-action="close">Sulje ✕</button></div><form id="plan-form"><div class="field"><label>Harjoitus</label><select name="kind">${Object.entries(TEMPLATES).map(([k, t]) => `<option value="${k}" ${p.kind === k ? 'selected' : ''}>${esc(t.title)} · ${ACTIVITIES[t.sport]}</option>`).join('')}</select></div><div class="split"><div class="field"><label>Päivä</label><input type="date" name="date" value="${p.date}" required></div><div class="field"><label>Aika · min</label><input type="number" name="duration" min="20" max="240" value="${p.duration}" required></div></div><p class="soft">Harjoittelulajin vaihtaminen vaatii aina erillisen vahvistuksen. Lukitun harjoituksen saa muuttaa vain itse.</p><button class="btn primary block mt" type="submit">Tallenna muutos</button></form></section></div>`;
 }
-function render() { const body = tab === 'today' ? todayView() : tab === 'plan' ? planView() : tab === 'train' ? trainView() : tab === 'analyze' ? analyzeView() : settingsView(); const warning = saveFailed ? `<section class="save-warning" role="alert"><strong>Tallennus epäonnistui.</strong> Viimeisimmät muutokset ovat vain tämän istunnon muistissa. Älä sulje sovellusta. <button class="btn sm" data-action="export">Vie JSON-varmuuskopio</button></section>` : ''; el().innerHTML = header() + warning + `<main>${body}</main>` + nav() + modalView(); updateTimer(); }
+function render() { const body = tab === 'today' ? todayView() : tab === 'plan' ? planView() : tab === 'train' ? trainView() : tab === 'analyze' ? analyzeView() : settingsView(); const warning = saveFailed ? `<section class="save-warning" role="alert"><strong>Tallennus epäonnistui.</strong> Viimeisimmät muutokset ovat vain tämän istunnon muistissa. Älä sulje sovellusta. <button class="btn sm" data-action="export">Vie JSON-varmuuskopio</button></section>` : ''; el().innerHTML = header() + warning + `<main>${body}</main>` + nav() + modalView(); updateTimer(); scheduleCoachRefresh(new Date()); }
 function changeTab(target) { if (!['today', 'plan', 'train', 'analyze', 'settings'].includes(target))
     return; tab = target; activeModal = ''; window.scrollTo({ top: 0, behavior: 'auto' }); render(); }
 function notify(msg) { flash(msg); }
@@ -1329,6 +1452,8 @@ function importFile(file) { if (file.size > 12 * 1024 * 1024) {
         return;
     const result = importBackup(state, raw);
     state = result.state;
+    coachCheckIn = null;
+    coachBudget = null;
     commit();
     flash(result.message);
 }
@@ -1352,7 +1477,7 @@ window.addEventListener('click', (evt) => {
         activeModal = '';
         return render();
     }
-    if(action==='coach-budget'){coachBudget=clamp(num(b.dataset.minutes,45),20,180);return render();}
+    if (action === 'coach-budget') return setCoachBudget(Number(b.dataset.minutes));
     if (action === 'minutes') {
         selectedMinutes = num(b.dataset.minutes, 45);
         return render();
@@ -1382,15 +1507,7 @@ window.addEventListener('click', (evt) => {
         return start(selectedKind, selectedMinutes);
     if (action === 'start-plan') {
         const p = state.plan.find(x => x.id === id);
-        if(p){
-            if(b.dataset.coach==='1'){
-                if(p.date!==today())return alert('Tämä ei ole tämän päivän harjoitus. Avaa Plan ja valitse haluamasi harjoitus.');
-                const recommendation=coachSessionProposal(p,coachRecommendation(state).coach,coachBudget ?? p.duration);
-                if(!recommendation||coachRecommendation(state).coach.pain)return alert('Arvioi ensin kipu- tai sairausoire.');
-                return start(recommendation.kind,recommendation.minutes,p.id);
-            }
-            return start(p.kind,p.duration,p.id);
-        }
+        if (p) return start(p.kind, p.duration, p.id);
     }
     if (action === 'finish-modal')
         return openModal('finish');
@@ -1531,6 +1648,8 @@ window.addEventListener('click', (evt) => {
         if (!confirm('Aloitetaanko Stride alusta? Kaikki tämän laitteen harjoitustiedot poistetaan. Varmista JSON-varmuuskopio ensin.'))
             return;
         state = initial();
+        coachCheckIn = null;
+        coachBudget = null;
         makeWeek(state, today());
         commit();
         return;
@@ -1547,7 +1666,6 @@ window.addEventListener('input', evt => {
     }
 });
 window.addEventListener('change', evt => {
-    if(evt.target?.id==='coach-custom-minutes'){coachBudget=clamp(num(evt.target.value,45),20,180);return render();}
     if(evt.target?.matches?.('[data-auto-sync]')){autoSyncEnabled=!!evt.target.checked;localStorage.setItem('up62-auto-sync',autoSyncEnabled?'on':'off');syncMessage=autoSyncEnabled?'Automaattinen synkronointi otettu käyttöön.':'Automaattinen synkronointi poistettu käytöstä.';render();if(autoSyncEnabled)void autoSyncIfDue(true);return;}
     const target = evt.target;
     if (target.matches('[data-setting]')) {
@@ -1602,6 +1720,13 @@ window.addEventListener('submit', evt => {
     if (!form?.id)
         return;
     evt.preventDefault();
+    if (form.id === 'coach-budget-form') {
+        const input = form.elements.namedItem('minutes');
+        if (!input.validity.valid) return input.reportValidity();
+        setCoachBudget(input.value === '' ? undefined : input.valueAsNumber);
+        document.querySelector('#coach-budget-form button')?.focus();
+        return;
+    }
     const fd = formData(form);
     try {
         if (form.id === 'activity-form') {
@@ -1614,14 +1739,22 @@ window.addEventListener('submit', evt => {
             return;
         }
         if (form.id === 'recovery-form') {
-            const previous=state.recovery.find(x=>x.date===today())||{};
-            const entry = {...previous, date: today(), energy: clamp(num(fd.get('energy'), 3), 1, 5), legs: clamp(num(fd.get('legs')), 0, 3), pain: String(fd.get('pain')) === '1' };
+            const pain = fd.get('pain');
+            if (pain !== '0' && pain !== '1') return form.reportValidity();
+            const now = new Date(), day = localDate(now);
+            const previous = state.recovery.find(x => x.date === day) || {};
+            const entry = {...previous, date: day, energy: clamp(num(fd.get('energy'), 3), 1, 5), legs: clamp(num(fd.get('legs')), 0, 3), pain: pain === '1' };
             for (const [k, name] of [['sleep', 'sleepHours'], ['hrv', 'hrv'], ['restHr', 'restHr'], ['readiness', 'readiness']]) {
                 const n = parseOptional(fd, k);
                 if (n !== undefined)
                     entry[name] = n;
             }
             recordRecovery(state, entry);
+            coachCheckIn = {
+                day, observedAt: now.toISOString(),
+                energy: entry.energy, legs: entry.legs, symptoms: entry.pain ? 'unclear' : 'none',
+                sleepHours: parseOptional(fd, 'sleep'), sleepPattern: fd.get('sleep-pattern') || undefined
+            };
             activeModal = '';
             if (commit()) notify('Palautumisen check-in tallennettu');
             return;
@@ -1686,6 +1819,14 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 window.addEventListener('online',()=>{void autoSyncIfDue(true)});
 setInterval(()=>void autoSyncIfDue(),30*60e3);
 render();
+void import('./src/coach/today.mjs').then(module => {
+    evaluateTodayCoach = module.evaluateTodayCoach;
+    coachCheckInMaxAgeMs = module.CHECK_IN_MAX_AGE_MS;
+}, () => {
+    evaluateTodayCoach = null;
+}).then(() => {
+    if (tab === 'today' && !activeModal) render();
+});
 void deviceReadyPromise.then(()=>{if(tab==='settings')render();void autoSyncIfDue(true)});
 if(new URLSearchParams(location.search).has('oura')){
   const status=new URLSearchParams(location.search).get('oura');

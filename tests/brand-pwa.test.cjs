@@ -37,14 +37,19 @@ test('BR04: legacy migration and old saved labels stay compatible',()=>{
  assert.match(html,/version: 6/);
  assert.match(html,/ultra-performance-worker-session/);
 });
-test('BR05: SW pre-caches the new branding assets',()=>{
+test('BR05: SW pre-caches branding and the full local Coach module graph',()=>{
  for(const n of ['symbol.svg','icon.svg','icon-32.png','icon-180.png','icon-192.png','icon-512.png'])assert.ok(sw.includes("'./"+n+"'"),n);
- assert.match(sw,/CACHE_NAME='ultra-performance-v6\.5\.0-stride'/);
+ for (const name of ['today', 'context', 'contracts', 'engine']) {
+  const asset = `src/coach/${name}.mjs`;
+  assert.ok(fs.existsSync(path.join(root, asset)), asset);
+  assert.ok(sw.includes(`'./${asset}'`), asset);
+ }
+ assert.match(sw,/CACHE_NAME='ultra-performance-v6\.5\.0-stride-coach'/);
 });
 function mockSW({online=false,cacheContents={}}={}){
  const handlers={};const deleted=[];const entries=new Map(Object.entries(cacheContents));
  const fakeCache={addAll:async assets=>{fakeCache.assets=assets;},put:async(k,v)=>entries.set(k,v),match:async k=>entries.get(k)};
- const caches={open:async()=>fakeCache,keys:async()=>['ultra-performance-v6.4.1','other-app-cache','ultra-performance-v6.5.0-stride'],delete:async k=>{deleted.push(k);return true}};
+ const caches={open:async()=>fakeCache,keys:async()=>['ultra-performance-v6.4.1','other-app-cache','ultra-performance-v6.5.0-stride','ultra-performance-v6.5.0-stride-coach'],delete:async k=>{deleted.push(k);return true}};
  const self={location:{origin:'https://tilezzz.github.io'},registration:{scope:'https://tilezzz.github.io/Gym/'},addEventListener:(name,cb)=>handlers[name]=cb,skipWaiting:()=>{},clients:{claim:async()=>{}}};
  const Response={error:()=>({kind:'network-error'})};
  const fetch=async req=>{if(!online)throw Error('offline');return {ok:true,type:'basic',clone(){return this},kind:'online'}};
@@ -53,7 +58,7 @@ function mockSW({online=false,cacheContents={}}={}){
 }
 test('BR06: SW activation deletes only this app’s previous cache, not other apps',async()=>{
  const {handlers,deleted}=mockSW();let task;handlers.activate({waitUntil:p=>task=p});await task;
- assert.deepEqual(deleted,['ultra-performance-v6.4.1']);
+ assert.deepEqual(deleted,['ultra-performance-v6.4.1','ultra-performance-v6.5.0-stride']);
 });
 test('BR07: offline navigation uses cached HTML, but missing icons do not',async()=>{
  const htmlUrl='https://tilezzz.github.io/Gym/index.html';
