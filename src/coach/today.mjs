@@ -2,6 +2,8 @@ import { buildContext } from './context.mjs';
 import { localDay } from './contracts.mjs';
 import { evaluateCoach, validateProposal } from './engine.mjs';
 
+export { CHECK_IN_MAX_AGE_MS } from './context.mjs';
+
 /** View data only. Check-in confirmations never become part of persisted v6 state. */
 export function evaluateTodayCoach(state, { now, timezone, checkIn, timeBudget }) {
   const day = localDay(now, timezone);

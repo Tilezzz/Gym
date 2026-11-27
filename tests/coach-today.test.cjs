@@ -40,6 +40,16 @@ test('stored recovery and stale confirmations never masquerade as a fresh sympto
   assert.deepEqual(noPattern.decision.missingFields, ['sleep_pattern']);
 });
 
+test('the Today check-in is usable at exactly 12 hours and expires immediately after', async () => {
+  const early = { ...checkIn, observedAt: `${day}T00:00:00.000Z` };
+  const state = v6();
+  const boundary = await assess(state, { now: `${day}T12:00:00.000Z`, checkIn: early });
+  assert.equal(boundary.proposal?.durationMinutes, 20);
+  const expired = await assess(state, { now: `${day}T12:00:00.001Z`, checkIn: early });
+  assert.deepEqual(expired.decision.missingFields, ['symptoms', 'energy']);
+  assert.equal(expired.proposal, null);
+});
+
 test('symptoms, an active draft, locked plans and future plans cannot produce a change preview', async () => {
   const withPain = await assess(v6({ recovery: [{ date: day, pain: true }] }));
   assert.equal(withPain.decision.safety, 'clarify');

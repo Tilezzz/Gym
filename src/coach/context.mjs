@@ -82,6 +82,8 @@ export function strengthHistory(activities) {
   for (const sets of Object.values(result)) sets.sort((a, b) => String(a.startedAt).localeCompare(String(b.startedAt)) || a.weight - b.weight || a.reps - b.reps);
   return result;
 }
+export const CHECK_IN_MAX_AGE_MS = 12 * 3600000;
+
 /** Freshness uses observation time, never a snapshot's or fetch's updatedAt. */
 export function freshness(e, now, timezone) {
   const day = localDay(now, timezone), time = Date.parse(now);
@@ -94,7 +96,7 @@ export function freshness(e, now, timezone) {
   if (checkIn && (e.day !== day || localDay(e.observedAt, timezone) !== day)) return 'stale';
   if (e.metric === 'readiness' && e.day !== day) return 'stale';
   if (e.day < dayOffset(day, -1)) return 'stale';
-  return age <= (checkIn ? 12 : 36) * 3600000 ? 'fresh' : 'stale';
+  return age <= (checkIn ? CHECK_IN_MAX_AGE_MS : 36 * 3600000) ? 'fresh' : 'stale';
 }
 /** Legacy v6 merges source fields: do not invent measured provenance or timestamps. */
 export function buildContext(state, { now, timezone, observations = [], coverageKnown = false } = {}) {

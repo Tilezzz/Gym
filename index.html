@@ -768,7 +768,7 @@ const { ACTIVITIES, EXERCISES, TEMPLATES } = __catalog;
 const { addActivity, coachRecommendation, exerciseHistory, finishSession, formatDuration, generate, getRecovery, initial, makeWeek, recordRecovery, progression, startSession, swapPlan, weekStats } = __engine;
 const { csvExport, download, filenameDate, importBackup, load, save } = __store;
 const { importGarminJSON, importOuraJSON, importOuraWorkoutJSON } = __external;
-const { addDays, clamp, fiDate, monday, num, today, uid } = __types;
+const { addDays, clamp, fiDate, localDate, monday, num, today, uid } = __types;
 // Activities are classified by purpose, not by calories or pulse alone.
 // Daily life is important for recovery but is never treated as planned aerobic training.
 function activityCategory(a){
@@ -838,6 +838,8 @@ let workoutLibraryOpen = false;
 let coachCheckIn = null;
 let coachBudget = null;
 let evaluateTodayCoach;
+let coachCheckInMaxAgeMs;
+let coachRefreshTimer;
 let swapOpen = false, swapSearch = '';
 const el = () => document.querySelector('#app');
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1066,13 +1068,13 @@ const coachObservationText = {
   sleep_pattern: value => value === 'single_night' ? 'yksi huono yö' : 'useita huonoja öitä',
   time_budget: value => `aikaa ${value} min`
 };
-function coachDecisionView(planned) {
+function coachDecisionView(planned, now) {
   if (state.active) return '<p class="soft mt">Harjoitus on käynnissä. Päivän treenipäätös on käytettävissä, kun harjoitus on päättynyt.</p>';
   if (!planned) return '<p class="soft mt">Tälle päivälle ei ole suunniteltua harjoitusta.</p>';
   if (!evaluateTodayCoach) return `<p class="soft mt">${evaluateTodayCoach === null ? 'Coach-päätös ei ole saatavilla. Muu harjoittelu on käytettävissä.' : 'Ladataan paikallista Coach Engineä…'}</p>`;
   let result;
   try {
-    result = evaluateTodayCoach(state, { now: new Date().toISOString(),
+    result = evaluateTodayCoach(state, { now: now.toISOString(),
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone, checkIn: coachCheckIn, timeBudget: coachBudget });
   } catch {
     return '<p class="soft mt">Coach-arviota ei voitu muodostaa. Tarkista päivän suunnitelma ja Smart Check-in.</p>';
@@ -1099,30 +1101,76 @@ function coachDecisionView(planned) {
   </div>`;
 }
 function setCoachBudget(minutes) {
-  coachBudget = minutes === undefined ? null : { minutes, day: today(), observedAt: new Date().toISOString() };
+  const now = new Date();
+  coachBudget = minutes === undefined ? null : { minutes, day: localDate(now), observedAt: now.toISOString() };
   render();
 }
+function todayCoachPlan(day) {
+  return state.plan.filter(p => p.date === day && p.status === 'planned')
+    .sort((a, b) => String(a.id).localeCompare(String(b.id)))[0];
+}
+function todayCoachResult(planned, now) {
+  const planLabel = planned ? `<p class="soft mt">Suunnitelmassa · ${esc(planned.title)} · ${formatDuration(planned.duration)}</p>` : '';
+  return planLabel + coachDecisionView(planned, now);
+}
+function currentCoachBudget(now, day) {
+  return coachBudget?.day === day && now - Date.parse(coachBudget.observedAt) <= coachCheckInMaxAgeMs
+    ? coachBudget.minutes : null;
+}
+function scheduleCoachRefresh(now) {
+  clearTimeout(coachRefreshTimer);
+  if (tab !== 'today') return;
+  const day = localDate(now);
+  const midnight = new Date(now);
+  let next = midnight.setHours(24, 0, 0, 0);
+  for (const observation of [coachCheckIn, coachBudget]) {
+    if (observation?.day !== day) continue;
+    const expiry = Date.parse(observation.observedAt) + coachCheckInMaxAgeMs + 1;
+    if (expiry > now) next = Math.min(next, expiry);
+  }
+  coachRefreshTimer = setTimeout(refreshTodayCoach, next - now);
+}
+function refreshTodayCoach() {
+  const result = document.getElementById('coach-today-result');
+  if (!result) return;
+  const now = new Date();
+  const day = localDate(now);
+  const planned = todayCoachPlan(day);
+  result.innerHTML = todayCoachResult(planned, now);
+  const controls = document.getElementById('coach-today-controls');
+  controls.hidden = !planned || !!state.active || !evaluateTodayCoach;
+  const budget = currentCoachBudget(now, day);
+  for (const choice of controls.querySelectorAll('[data-action="coach-budget"]')) {
+    const selected = Number(choice.dataset.minutes) === budget;
+    choice.classList.toggle('on', selected);
+    choice.setAttribute('aria-pressed', String(selected));
+  }
+  const minutes = document.getElementById('coach-custom-minutes');
+  const savedMinutes = budget === null ? '' : String(budget);
+  // Keep unsubmitted input and focus while the result expires.
+  if (!minutes.validity.badInput && minutes.value === minutes.defaultValue) minutes.value = savedMinutes;
+  minutes.defaultValue = savedMinutes;
+  scheduleCoachRefresh(now);
+}
 function todayView() {
-    const day = today(), stat = weekStats(state), r = getRecovery(state);
-    const planned = state.plan.filter(p => p.date === day && p.status === 'planned')
-        .sort((a, b) => String(a.id).localeCompare(String(b.id)))[0];
+    const now = new Date(), day = localDate(now), stat = weekStats(state), r = getRecovery(state);
+    const planned = todayCoachPlan(day);
     const recent=state.activities.slice().sort((a,b)=>b.startedAt.localeCompare(a.startedAt)).slice(0,4);
     const summary=activitySummary(state),trend=recoveryContext(state);
-    const budget = coachBudget?.day === day && Date.now() - Date.parse(coachBudget.observedAt) <= 12 * 3600000
-        ? coachBudget.minutes : null;
+    const budget = currentCoachBudget(now, day);
     const quickChoices = [20, 30, 45, 60].map(minutes => `<button class="choice ${budget === minutes ? 'on' : ''}" aria-pressed="${budget === minutes}" data-action="coach-budget" data-minutes="${minutes}">${minutes} min</button>`).join('');
     return `<div class="eyebrow">TRAINING INTELLIGENCE / TODAY · 6.5.0</div><h1 style="margin-top:8px">Hybridi ilman kompromisseja.</h1>
  <section class="card hero mt" aria-labelledby="coach-today-heading">
   <h2 id="coach-today-heading">Päivän treenipäätös</h2>
-  ${planned ? `<p class="soft mt">Suunnitelmassa · ${esc(planned.title)} · ${formatDuration(planned.duration)}</p>` : ''}
-  ${coachDecisionView(planned)}
-  ${planned && !state.active && evaluateTodayCoach ? `
+  <div id="coach-today-result">${todayCoachResult(planned, now)}</div>
+  <div id="coach-today-controls" ${planned && !state.active && evaluateTodayCoach ? '' : 'hidden'}>
     <div class="section-label mt">AIKAA KÄYTETTÄVISSÄ (VALINNAINEN)</div><div class="choice-row coach-budgets">${quickChoices}</div>
     <form id="coach-budget-form" class="mt">
       <div class="field"><label for="coach-custom-minutes">Minuutit tänään (0–240)</label><input id="coach-custom-minutes" name="minutes" type="number" inputmode="numeric" min="0" max="240" step="1" value="${budget ?? ''}"></div>
       <button class="btn sm ghost" type="submit">Päivitä arvio</button>
     </form>
-    <button class="btn sm ghost mt" data-action="recovery">Avaa Smart Check-in</button>` : ''}
+    <button class="btn sm ghost mt" data-action="recovery">Avaa Smart Check-in</button>
+  </div>
   <div class="btn-row mt"><button class="btn primary" data-action="tab" data-tab="train">${state.active ? 'Jatka harjoitusta' : 'Siirry harjoitteluun'} →</button><button class="btn ghost" data-action="tab" data-tab="plan">Näytä suunnitelma</button></div>
  </section>
  ${bp('VIIMEISET 7 PÄIVÄÄ')}<div class="kpis"><div class="kpi"><div class="tag">VOIMAHARJOITUKSET</div><div class="value green">${stat.strength}</div><div class="unit">${stat.sets} työsarjaa</div></div><div class="kpi"><div class="tag">JUOKSU</div><div class="value">${fmt(stat.runKm, 1)}</div><div class="unit">km · ${stat.runMinutes} min</div></div><div class="kpi"><div class="tag">MUU KESTÄVYYS</div><div class="value blue">${Math.max(0,summary.minutes.endurance-stat.runMinutes)}</div><div class="unit">min · pyöräily, vaellus, hiihto</div></div></div>
@@ -1341,7 +1389,7 @@ function modalView() {
         return '';
     return `<div class="modal-backdrop"><section class="card modal" role="dialog" aria-modal="true" aria-label="Muokkaa suunnitelmaa"><div class="row between"><h2>Muokkaa harjoitusta</h2><button class="btn sm ghost" data-action="close">Sulje ✕</button></div><form id="plan-form"><div class="field"><label>Harjoitus</label><select name="kind">${Object.entries(TEMPLATES).map(([k, t]) => `<option value="${k}" ${p.kind === k ? 'selected' : ''}>${esc(t.title)} · ${ACTIVITIES[t.sport]}</option>`).join('')}</select></div><div class="split"><div class="field"><label>Päivä</label><input type="date" name="date" value="${p.date}" required></div><div class="field"><label>Aika · min</label><input type="number" name="duration" min="20" max="240" value="${p.duration}" required></div></div><p class="soft">Harjoittelulajin vaihtaminen vaatii aina erillisen vahvistuksen. Lukitun harjoituksen saa muuttaa vain itse.</p><button class="btn primary block mt" type="submit">Tallenna muutos</button></form></section></div>`;
 }
-function render() { const body = tab === 'today' ? todayView() : tab === 'plan' ? planView() : tab === 'train' ? trainView() : tab === 'analyze' ? analyzeView() : settingsView(); const warning = saveFailed ? `<section class="save-warning" role="alert"><strong>Tallennus epäonnistui.</strong> Viimeisimmät muutokset ovat vain tämän istunnon muistissa. Älä sulje sovellusta. <button class="btn sm" data-action="export">Vie JSON-varmuuskopio</button></section>` : ''; el().innerHTML = header() + warning + `<main>${body}</main>` + nav() + modalView(); updateTimer(); }
+function render() { const body = tab === 'today' ? todayView() : tab === 'plan' ? planView() : tab === 'train' ? trainView() : tab === 'analyze' ? analyzeView() : settingsView(); const warning = saveFailed ? `<section class="save-warning" role="alert"><strong>Tallennus epäonnistui.</strong> Viimeisimmät muutokset ovat vain tämän istunnon muistissa. Älä sulje sovellusta. <button class="btn sm" data-action="export">Vie JSON-varmuuskopio</button></section>` : ''; el().innerHTML = header() + warning + `<main>${body}</main>` + nav() + modalView(); updateTimer(); scheduleCoachRefresh(new Date()); }
 function changeTab(target) { if (!['today', 'plan', 'train', 'analyze', 'settings'].includes(target))
     return; tab = target; activeModal = ''; window.scrollTo({ top: 0, behavior: 'auto' }); render(); }
 function notify(msg) { flash(msg); }
@@ -1693,8 +1741,9 @@ window.addEventListener('submit', evt => {
         if (form.id === 'recovery-form') {
             const pain = fd.get('pain');
             if (pain !== '0' && pain !== '1') return form.reportValidity();
-            const previous=state.recovery.find(x=>x.date===today())||{};
-            const entry = {...previous, date: today(), energy: clamp(num(fd.get('energy'), 3), 1, 5), legs: clamp(num(fd.get('legs')), 0, 3), pain: pain === '1' };
+            const now = new Date(), day = localDate(now);
+            const previous = state.recovery.find(x => x.date === day) || {};
+            const entry = {...previous, date: day, energy: clamp(num(fd.get('energy'), 3), 1, 5), legs: clamp(num(fd.get('legs')), 0, 3), pain: pain === '1' };
             for (const [k, name] of [['sleep', 'sleepHours'], ['hrv', 'hrv'], ['restHr', 'restHr'], ['readiness', 'readiness']]) {
                 const n = parseOptional(fd, k);
                 if (n !== undefined)
@@ -1702,7 +1751,7 @@ window.addEventListener('submit', evt => {
             }
             recordRecovery(state, entry);
             coachCheckIn = {
-                day: entry.date, observedAt: new Date().toISOString(),
+                day, observedAt: now.toISOString(),
                 energy: entry.energy, legs: entry.legs, symptoms: entry.pain ? 'unclear' : 'none',
                 sleepHours: parseOptional(fd, 'sleep'), sleepPattern: fd.get('sleep-pattern') || undefined
             };
@@ -1772,6 +1821,7 @@ setInterval(()=>void autoSyncIfDue(),30*60e3);
 render();
 void import('./src/coach/today.mjs').then(module => {
     evaluateTodayCoach = module.evaluateTodayCoach;
+    coachCheckInMaxAgeMs = module.CHECK_IN_MAX_AGE_MS;
 }, () => {
     evaluateTodayCoach = null;
 }).then(() => {
