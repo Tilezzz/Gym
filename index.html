@@ -1118,8 +1118,11 @@ function todayView() {
   ${coachDecisionView(planned)}
   ${planned && !state.active && evaluateTodayCoach ? `
     <div class="section-label mt">AIKAA KÄYTETTÄVISSÄ (VALINNAINEN)</div><div class="choice-row coach-budgets">${quickChoices}</div>
-    <div class="field mt"><label for="coach-custom-minutes">Minuutit tänään (0–240)</label><input id="coach-custom-minutes" type="number" inputmode="numeric" min="0" max="240" step="1" value="${budget ?? ''}"></div>
-    <button class="btn sm ghost" data-action="recovery">Avaa Smart Check-in</button>` : ''}
+    <form id="coach-budget-form" class="mt">
+      <div class="field"><label for="coach-custom-minutes">Minuutit tänään (0–240)</label><input id="coach-custom-minutes" name="minutes" type="number" inputmode="numeric" min="0" max="240" step="1" value="${budget ?? ''}"></div>
+      <button class="btn sm ghost" type="submit">Päivitä arvio</button>
+    </form>
+    <button class="btn sm ghost mt" data-action="recovery">Avaa Smart Check-in</button>` : ''}
   <div class="btn-row mt"><button class="btn primary" data-action="tab" data-tab="train">${state.active ? 'Jatka harjoitusta' : 'Siirry harjoitteluun'} →</button><button class="btn ghost" data-action="tab" data-tab="plan">Näytä suunnitelma</button></div>
  </section>
  ${bp('VIIMEISET 7 PÄIVÄÄ')}<div class="kpis"><div class="kpi"><div class="tag">VOIMAHARJOITUKSET</div><div class="value green">${stat.strength}</div><div class="unit">${stat.sets} työsarjaa</div></div><div class="kpi"><div class="tag">JUOKSU</div><div class="value">${fmt(stat.runKm, 1)}</div><div class="unit">km · ${stat.runMinutes} min</div></div><div class="kpi"><div class="tag">MUU KESTÄVYYS</div><div class="value blue">${Math.max(0,summary.minutes.endurance-stat.runMinutes)}</div><div class="unit">min · pyöräily, vaellus, hiihto</div></div></div>
@@ -1615,11 +1618,6 @@ window.addEventListener('input', evt => {
     }
 });
 window.addEventListener('change', evt => {
-    if (evt.target?.id === 'coach-custom-minutes') {
-        const input = evt.target;
-        if (!input.validity.valid) return input.reportValidity();
-        return setCoachBudget(input.value === '' ? undefined : input.valueAsNumber);
-    }
     if(evt.target?.matches?.('[data-auto-sync]')){autoSyncEnabled=!!evt.target.checked;localStorage.setItem('up62-auto-sync',autoSyncEnabled?'on':'off');syncMessage=autoSyncEnabled?'Automaattinen synkronointi otettu käyttöön.':'Automaattinen synkronointi poistettu käytöstä.';render();if(autoSyncEnabled)void autoSyncIfDue(true);return;}
     const target = evt.target;
     if (target.matches('[data-setting]')) {
@@ -1674,6 +1672,13 @@ window.addEventListener('submit', evt => {
     if (!form?.id)
         return;
     evt.preventDefault();
+    if (form.id === 'coach-budget-form') {
+        const input = form.elements.namedItem('minutes');
+        if (!input.validity.valid) return input.reportValidity();
+        setCoachBudget(input.value === '' ? undefined : input.valueAsNumber);
+        document.querySelector('#coach-budget-form button')?.focus();
+        return;
+    }
     const fd = formData(form);
     try {
         if (form.id === 'activity-form') {
